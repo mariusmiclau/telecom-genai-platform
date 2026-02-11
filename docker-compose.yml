@@ -9,15 +9,58 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://genai:changeme@postgres:5432/telecom_genai
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMADB_HOST=chroma
+      - CHROMADB_PORT=8000
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
     depends_on:
-      - postgres
-      - redis
-      - chroma
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_started
     volumes:
-      - ./src:/app/src
-      - ./docs/sample_data:/app/data/sample_data
+      - ./src:/app/src:ro
+      - ./docs/sample_data:/app/data/sample_data:ro
+      - api_logs:/app/logs
     networks:
       - telecom-genai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Background Worker for async tasks (document ingestion, etc.)
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.worker
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://genai:changeme@postgres:5432/telecom_genai
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMADB_HOST=chroma
+      - CHROMADB_PORT=8000
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src:ro
+      - ./docs/sample_data:/app/data/sample_data:ro
+      - worker_logs:/app/logs
+    networks:
+      - telecom-genai
+    restart: unless-stopped
 
   # PostgreSQL - Conversation history and audit logs
   postgres:
@@ -26,30 +69,57 @@ services:
       POSTGRES_DB: telecom_genai
       POSTGRES_USER: genai
       POSTGRES_PASSWORD: changeme
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - telecom-genai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U genai -d telecom_genai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  # Redis - Caching and session management
+  # Redis - Caching, session management, and Celery broker
   redis:
     image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy volatile-lru
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - telecom-genai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
-  # ChromaDB - Vector store
+  # ChromaDB - Vector store for RAG
   chroma:
     image: chromadb/chroma:latest
     ports:
       - "8100:8000"
+    environment:
+      - ANONYMIZED_TELEMETRY=false
     volumes:
       - chroma_data:/chroma/chroma
     networks:
       - telecom-genai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   # Simulated OSS/BSS API
   oss-simulator:
@@ -60,36 +130,105 @@ services:
       - "8001:8001"
     networks:
       - telecom-genai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
   # Prometheus - Metrics collection
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.48.0
     ports:
       - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
     volumes:
-      - ./infrastructure/docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     networks:
       - telecom-genai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  # Grafana - Dashboards
+  # Grafana - Dashboards and visualization
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.2.0
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./infrastructure/docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./infrastructure/docker/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
     networks:
       - telecom-genai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Redis Exporter for Prometheus
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - telecom-genai
+    restart: unless-stopped
+
+  # Postgres Exporter for Prometheus
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    ports:
+      - "9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://genai:changeme@postgres:5432/telecom_genai?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - telecom-genai
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local
   chroma_data:
+    driver: local
   grafana_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  api_logs:
+    driver: local
+  worker_logs:
+    driver: local
 
 networks:
   telecom-genai:
