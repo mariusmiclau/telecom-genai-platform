@@ -1,0 +1,96 @@
+version: '3.9'
+
+services:
+  # Main API Service
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+      - chroma
+    volumes:
+      - ./src:/app/src
+      - ./docs/sample_data:/app/data/sample_data
+    networks:
+      - telecom-genai
+
+  # PostgreSQL - Conversation history and audit logs
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: telecom_genai
+      POSTGRES_USER: genai
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - telecom-genai
+
+  # Redis - Caching and session management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - telecom-genai
+
+  # ChromaDB - Vector store
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8100:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - telecom-genai
+
+  # Simulated OSS/BSS API
+  oss-simulator:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.simulator
+    ports:
+      - "8001:8001"
+    networks:
+      - telecom-genai
+
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/docker/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - telecom-genai
+
+  # Grafana - Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - telecom-genai
+
+volumes:
+  postgres_data:
+  chroma_data:
+  grafana_data:
+
+networks:
+  telecom-genai:
+    driver: bridge
