@@ -31,8 +31,8 @@
     "configurations": {
       "B_ticket_aware_hybrid": {
         "evidence_coverage_at_5": 0.8072,
-        "latency_p50_ms": 4.9247,
-        "latency_p95_ms": 8.9795,
+        "latency_p50_ms": 5.0765,
+        "latency_p95_ms": 6.2069,
         "ndcg_at_5": 0.8019,
         "questions": 50,
         "recall_at_1": 0.74,
@@ -43,8 +43,8 @@
       },
       "C_ticket_aware_hybrid_reranker": {
         "evidence_coverage_at_5": 0.8999,
-        "latency_p50_ms": 12.4082,
-        "latency_p95_ms": 18.3891,
+        "latency_p50_ms": 13.5554,
+        "latency_p95_ms": 21.8374,
         "ndcg_at_5": 1.0,
         "questions": 50,
         "recall_at_1": 1.0,
@@ -61,7 +61,7 @@
   "number_of_rejected_records": 0,
   "parent_version": "tickets-v1.2-pii-redacted",
   "snapshot_file": "datasets/tickets-v2.0-ticket-aware-chunking/tickets.jsonl",
-  "snapshot_sha256": "4fe9b2b3d6e13ef509238676e0dd143b7268b360e6d67d935ec9458685a7ab36",
+  "snapshot_sha256": "122493c56b06267faa0b3ecc130b7f6e636e8e54cc94cf6d20aa2a79df4600a1",
   "source_snapshot": "synthetic-servicenow-export-2026-07-31",
   "synthetic_data": true
 }

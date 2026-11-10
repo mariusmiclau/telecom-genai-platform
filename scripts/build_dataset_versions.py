@@ -114,7 +114,7 @@ def _sha256(path: Path) -> str:
 def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = "\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n"
-    path.write_text(payload, encoding="utf-8")
+    path.write_text(payload, encoding="utf-8", newline="\n")
 
 
 def _write_json(path: Path, value: dict[str, Any]) -> None:

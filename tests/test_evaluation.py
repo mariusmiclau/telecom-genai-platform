@@ -19,6 +19,8 @@ def test_versioned_datasets_and_golden_set_validate():
         "tickets-v2.0-ticket-aware-chunking",
     ]
     assert all(version["documents"] == 50 for version in result["versions"])
+    for snapshot in (ROOT / "datasets").glob("*/tickets.jsonl"):
+        assert b"\r\n" not in snapshot.read_bytes()
 
 
 def test_retrieval_baseline_is_reproducible():

@@ -6,9 +6,9 @@ Embedding: `telecom-hashing-embedding-v1` (384 dimensions)
 
 | Configuration | Recall@1 | Recall@5 | Recall@10 | MRR | nDCG@5 | Evidence coverage@5 | p95 latency (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| A_recursive_vector | 64.0% | 78.0% | 80.0% | 0.690 | 0.710 | 71.4% | 6.134 |
-| B_ticket_aware_hybrid | 74.0% | 86.0% | 96.0% | 0.796 | 0.802 | 80.7% | 8.979 |
-| C_ticket_aware_hybrid_reranker | 100.0% | 100.0% | 100.0% | 1.000 | 1.000 | 90.0% | 18.389 |
+| A_recursive_vector | 64.0% | 78.0% | 80.0% | 0.690 | 0.710 | 71.4% | 8.016 |
+| B_ticket_aware_hybrid | 74.0% | 86.0% | 96.0% | 0.796 | 0.802 | 80.7% | 6.207 |
+| C_ticket_aware_hybrid_reranker | 100.0% | 100.0% | 100.0% | 1.000 | 1.000 | 90.0% | 21.837 |
 
 ## Recall@5 by question tag
 

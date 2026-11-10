@@ -1,0 +1,2 @@
+# Dataset hashes must survive Windows/Linux checkout unchanged.
+*.jsonl text eol=lf

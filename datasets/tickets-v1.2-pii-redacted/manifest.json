@@ -22,7 +22,7 @@
   "number_of_rejected_records": 0,
   "parent_version": "tickets-v1.1-cleaned",
   "snapshot_file": "datasets/tickets-v1.2-pii-redacted/tickets.jsonl",
-  "snapshot_sha256": "bebe3c990966904358415022b7b66f26fcf33bcb8a424001aa75e48f38e3a70e",
+  "snapshot_sha256": "308434ce83fe2e675082c72f228c7374ff0f810d05d0b02f0d4940ada36af937",
   "source_snapshot": "synthetic-servicenow-export-2026-07-31",
   "synthetic_data": true
 }
