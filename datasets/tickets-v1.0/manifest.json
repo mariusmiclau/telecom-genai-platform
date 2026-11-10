@@ -1,0 +1,39 @@
+{
+  "chunking_configuration": {
+    "chunk_overlap": 40,
+    "chunk_size": 240,
+    "strategy": "recursive"
+  },
+  "cleaning_rules": [
+    "none; immutable synthetic source export"
+  ],
+  "creation_timestamp": "2026-08-05T00:00:00Z",
+  "dataset_version": "tickets-v1.0",
+  "embedding_dimensions": 384,
+  "embedding_model": "telecom-hashing-embedding-v1",
+  "evaluation_results": {
+    "configurations": {
+      "A_recursive_vector": {
+        "evidence_coverage_at_5": 0.7142,
+        "latency_p50_ms": 5.0967,
+        "latency_p95_ms": 8.0158,
+        "ndcg_at_5": 0.7098,
+        "questions": 50,
+        "recall_at_1": 0.64,
+        "recall_at_10": 0.8,
+        "recall_at_5": 0.78,
+        "reciprocal_rank": 0.69,
+        "source_recall_at_5": 0.78
+      }
+    },
+    "report": "reports/evaluation/baseline.json",
+    "status": "measured"
+  },
+  "number_of_documents": 50,
+  "number_of_rejected_records": 0,
+  "parent_version": null,
+  "snapshot_file": "datasets/tickets-v1.0/tickets.jsonl",
+  "snapshot_sha256": "f2dfc769f812cbb096f1dc162fd4fff50fc28b09ab9ecc6818266b949896f5f6",
+  "source_snapshot": "synthetic-servicenow-export-2026-07-31",
+  "synthetic_data": true
+}

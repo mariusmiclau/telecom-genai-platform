@@ -1,0 +1,4000 @@
+{
+  "configurations": {
+    "A_recursive_vector": {
+      "breakdown": {
+        "acronym": {
+          "questions": 10,
+          "recall_at_5": 0.7,
+          "reciprocal_rank": 0.7
+        },
+        "entity_id": {
+          "questions": 15,
+          "recall_at_5": 0.5333,
+          "reciprocal_rank": 0.35
+        },
+        "semantic": {
+          "questions": 25,
+          "recall_at_5": 0.96,
+          "reciprocal_rank": 0.89
+        }
+      },
+      "metrics": {
+        "evidence_coverage_at_5": 0.7142,
+        "latency_p50_ms": 5.0967,
+        "latency_p95_ms": 8.0158,
+        "ndcg_at_5": 0.7098,
+        "questions": 50,
+        "recall_at_1": 0.64,
+        "recall_at_10": 0.8,
+        "recall_at_5": 0.78,
+        "reciprocal_rank": 0.69,
+        "source_recall_at_5": 0.78
+      }
+    },
+    "B_ticket_aware_hybrid": {
+      "breakdown": {
+        "acronym": {
+          "questions": 10,
+          "recall_at_5": 0.8,
+          "reciprocal_rank": 0.7422
+        },
+        "entity_id": {
+          "questions": 15,
+          "recall_at_5": 0.6667,
+          "reciprocal_rank": 0.524
+        },
+        "semantic": {
+          "questions": 25,
+          "recall_at_5": 1.0,
+          "reciprocal_rank": 0.98
+        }
+      },
+      "metrics": {
+        "evidence_coverage_at_5": 0.8072,
+        "latency_p50_ms": 5.0765,
+        "latency_p95_ms": 6.2069,
+        "ndcg_at_5": 0.8019,
+        "questions": 50,
+        "recall_at_1": 0.74,
+        "recall_at_10": 0.96,
+        "recall_at_5": 0.86,
+        "reciprocal_rank": 0.7957,
+        "source_recall_at_5": 0.86
+      }
+    },
+    "C_ticket_aware_hybrid_reranker": {
+      "breakdown": {
+        "acronym": {
+          "questions": 10,
+          "recall_at_5": 1.0,
+          "reciprocal_rank": 1.0
+        },
+        "entity_id": {
+          "questions": 15,
+          "recall_at_5": 1.0,
+          "reciprocal_rank": 1.0
+        },
+        "semantic": {
+          "questions": 25,
+          "recall_at_5": 1.0,
+          "reciprocal_rank": 1.0
+        }
+      },
+      "metrics": {
+        "evidence_coverage_at_5": 0.8999,
+        "latency_p50_ms": 13.5554,
+        "latency_p95_ms": 21.8374,
+        "ndcg_at_5": 1.0,
+        "questions": 50,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "source_recall_at_5": 1.0
+      }
+    }
+  },
+  "dataset_version": "tickets-v2.0-ticket-aware-chunking",
+  "embedding": {
+    "dimensions": 384,
+    "model": "telecom-hashing-embedding-v1"
+  },
+  "evaluation_name": "telecom-ticket-retrieval-golden-v1",
+  "golden_questions": 50,
+  "question_results": {
+    "A_recursive_vector": [
+      {
+        "evidence_coverage_at_5": 0.8888888888888888,
+        "expected_ticket_ids": [
+          "INC20260001"
+        ],
+        "ndcg_at_5": 0.43067655807339306,
+        "question_id": "GQ-001",
+        "rank": 4,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.25,
+        "retrieved_ticket_ids": [
+          "INC20260036",
+          "INC20260028",
+          "INC20260031",
+          "INC20260001",
+          "INC20260041",
+          "INC20260027",
+          "INC20260003",
+          "INC20260011",
+          "INC20260005",
+          "INC20260042"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260002"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-002",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260039",
+          "INC20260036",
+          "INC20260032",
+          "INC20260031",
+          "INC20260035",
+          "INC20260027",
+          "INC20260041",
+          "INC20260047",
+          "INC20260029",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260003"
+        ],
+        "ndcg_at_5": 0.5,
+        "question_id": "GQ-003",
+        "rank": 3,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.3333333333333333,
+        "retrieved_ticket_ids": [
+          "INC20260048",
+          "INC20260047",
+          "INC20260003",
+          "INC20260008",
+          "INC20260049",
+          "INC20260029",
+          "INC20260022",
+          "INC20260021",
+          "INC20260046",
+          "INC20260026"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.25,
+        "expected_ticket_ids": [
+          "INC20260004"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-004",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260036",
+          "INC20260031",
+          "INC20260041",
+          "INC20260027",
+          "INC20260003",
+          "INC20260023",
+          "INC20260011",
+          "INC20260005",
+          "INC20260028",
+          "INC20260047"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260005"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-005",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260005",
+          "INC20260032",
+          "INC20260039",
+          "INC20260047",
+          "INC20260011",
+          "INC20260007",
+          "INC20260029",
+          "INC20260003",
+          "INC20260035",
+          "INC20260037"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260006"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-006",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260027",
+          "INC20260036",
+          "INC20260031",
+          "INC20260023",
+          "INC20260041",
+          "INC20260026",
+          "INC20260048",
+          "INC20260003",
+          "INC20260030",
+          "INC20260005"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260007"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-007",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260010",
+          "INC20260009",
+          "INC20260029",
+          "INC20260024",
+          "INC20260022",
+          "INC20260046",
+          "INC20260019",
+          "INC20260043",
+          "INC20260036",
+          "INC20260021"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.75,
+        "expected_ticket_ids": [
+          "INC20260008"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-008",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260008",
+          "INC20260036",
+          "INC20260014",
+          "INC20260011",
+          "INC20260017",
+          "INC20260016",
+          "INC20260021",
+          "INC20260004",
+          "INC20260042",
+          "INC20260039"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.3333333333333333,
+        "expected_ticket_ids": [
+          "INC20260009"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-009",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260039",
+          "INC20260036",
+          "INC20260032",
+          "INC20260031",
+          "INC20260047",
+          "INC20260035",
+          "INC20260041",
+          "INC20260027",
+          "INC20260003",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260010"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-010",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260010",
+          "INC20260009",
+          "INC20260038"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260011"
+        ],
+        "ndcg_at_5": 0.5,
+        "question_id": "GQ-011",
+        "rank": 3,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.3333333333333333,
+        "retrieved_ticket_ids": [
+          "INC20260002",
+          "INC20260024",
+          "INC20260011",
+          "INC20260036",
+          "INC20260041",
+          "INC20260035",
+          "INC20260031",
+          "INC20260010",
+          "INC20260034",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260012"
+        ],
+        "ndcg_at_5": 0.5,
+        "question_id": "GQ-012",
+        "rank": 3,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.3333333333333333,
+        "retrieved_ticket_ids": [
+          "INC20260022",
+          "INC20260028",
+          "INC20260012",
+          "INC20260037",
+          "INC20260032",
+          "INC20260025",
+          "INC20260039",
+          "INC20260047",
+          "INC20260011",
+          "INC20260042"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260013"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-013",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260017",
+          "INC20260011",
+          "INC20260012",
+          "INC20260002"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.2222222222222222,
+        "expected_ticket_ids": [
+          "INC20260014"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-014",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260005",
+          "INC20260011",
+          "INC20260003",
+          "INC20260042",
+          "INC20260028",
+          "INC20260043"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260015"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-015",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260015",
+          "INC20260013",
+          "INC20260032",
+          "INC20260039",
+          "INC20260001",
+          "INC20260047",
+          "INC20260009",
+          "INC20260029",
+          "INC20260024",
+          "INC20260006"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260016"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-016",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260032",
+          "INC20260039",
+          "INC20260010",
+          "INC20260009",
+          "INC20260047",
+          "INC20260029",
+          "INC20260035",
+          "INC20260037"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260017"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-017",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260032",
+          "INC20260039",
+          "INC20260010",
+          "INC20260009",
+          "INC20260047",
+          "INC20260029",
+          "INC20260035",
+          "INC20260037"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260018"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-018",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260018",
+          "INC20260048",
+          "INC20260036",
+          "INC20260024",
+          "INC20260025",
+          "INC20260049",
+          "INC20260047",
+          "INC20260037",
+          "INC20260017",
+          "INC20260020"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8333333333333334,
+        "expected_ticket_ids": [
+          "INC20260019"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-019",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260019",
+          "INC20260010",
+          "INC20260037",
+          "INC20260018",
+          "INC20260030",
+          "INC20260017",
+          "INC20260027",
+          "INC20260014",
+          "INC20260031",
+          "INC20260046"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260020"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-020",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260020",
+          "INC20260024",
+          "INC20260007",
+          "INC20260003",
+          "INC20260005",
+          "INC20260037",
+          "INC20260029",
+          "INC20260002",
+          "INC20260030",
+          "INC20260034"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260021"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-021",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260021",
+          "INC20260029",
+          "INC20260007",
+          "INC20260033",
+          "INC20260048",
+          "INC20260041",
+          "INC20260010",
+          "INC20260015",
+          "INC20260008",
+          "INC20260017"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260022"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-022",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260022",
+          "INC20260039",
+          "INC20260041",
+          "INC20260015",
+          "INC20260040",
+          "INC20260017",
+          "INC20260025",
+          "INC20260007",
+          "INC20260033",
+          "INC20260024"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.25,
+        "expected_ticket_ids": [
+          "INC20260023"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-023",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260023",
+          "INC20260049",
+          "INC20260008",
+          "INC20260028",
+          "INC20260001",
+          "INC20260004",
+          "INC20260024",
+          "INC20260042",
+          "INC20260018",
+          "INC20260040"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260024"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-024",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260024",
+          "INC20260001",
+          "INC20260023",
+          "INC20260026",
+          "INC20260020",
+          "INC20260018",
+          "INC20260045",
+          "INC20260042",
+          "INC20260021",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260025"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-025",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260005",
+          "INC20260007",
+          "INC20260011",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6666666666666666,
+        "expected_ticket_ids": [
+          "INC20260026"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-026",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260026",
+          "INC20260045",
+          "INC20260039",
+          "INC20260037",
+          "INC20260049",
+          "INC20260022",
+          "INC20260011",
+          "INC20260009",
+          "INC20260029",
+          "INC20260041"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260027"
+        ],
+        "ndcg_at_5": 0.5,
+        "question_id": "GQ-027",
+        "rank": 3,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.3333333333333333,
+        "retrieved_ticket_ids": [
+          "INC20260036",
+          "INC20260031",
+          "INC20260027",
+          "INC20260041",
+          "INC20260004",
+          "INC20260003",
+          "INC20260039",
+          "INC20260022",
+          "INC20260013",
+          "INC20260008"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260028"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-028",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260028",
+          "INC20260049",
+          "INC20260023",
+          "INC20260008",
+          "INC20260001",
+          "INC20260021",
+          "INC20260017",
+          "INC20260043",
+          "INC20260009",
+          "INC20260004"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260029"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-029",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260029",
+          "INC20260001",
+          "INC20260023",
+          "INC20260009",
+          "INC20260036",
+          "INC20260004",
+          "INC20260045",
+          "INC20260049",
+          "INC20260006",
+          "INC20260031"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260030"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-030",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260030",
+          "INC20260033",
+          "INC20260044",
+          "INC20260047",
+          "INC20260034",
+          "INC20260022",
+          "INC20260017",
+          "INC20260045",
+          "INC20260002",
+          "INC20260025"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.625,
+        "expected_ticket_ids": [
+          "INC20260031"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-031",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260031",
+          "INC20260002",
+          "INC20260014",
+          "INC20260036",
+          "INC20260007",
+          "INC20260001",
+          "INC20260008",
+          "INC20260009",
+          "INC20260027",
+          "INC20260041"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8333333333333334,
+        "expected_ticket_ids": [
+          "INC20260032"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-032",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260032",
+          "INC20260039",
+          "INC20260030",
+          "INC20260029",
+          "INC20260003",
+          "INC20260026",
+          "INC20260038",
+          "INC20260042",
+          "INC20260025",
+          "INC20260045"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260033"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-033",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260033",
+          "INC20260031",
+          "INC20260030",
+          "INC20260050",
+          "INC20260045",
+          "INC20260021",
+          "INC20260017",
+          "INC20260032",
+          "INC20260034",
+          "INC20260011"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260034"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-034",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260034",
+          "INC20260007",
+          "INC20260036",
+          "INC20260027",
+          "INC20260018",
+          "INC20260003",
+          "INC20260037",
+          "INC20260020",
+          "INC20260026",
+          "INC20260023"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260035"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-035",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260035",
+          "INC20260039",
+          "INC20260007",
+          "INC20260022",
+          "INC20260024",
+          "INC20260029",
+          "INC20260036",
+          "INC20260037",
+          "INC20260030",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260036"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-036",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260036",
+          "INC20260044",
+          "INC20260031",
+          "INC20260046",
+          "INC20260047",
+          "INC20260049",
+          "INC20260041",
+          "INC20260018",
+          "INC20260048",
+          "INC20260021"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.625,
+        "expected_ticket_ids": [
+          "INC20260037"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-037",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260037",
+          "INC20260039",
+          "INC20260026",
+          "INC20260036",
+          "INC20260045",
+          "INC20260023",
+          "INC20260031",
+          "INC20260005",
+          "INC20260009",
+          "INC20260027"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260038"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-038",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260038",
+          "INC20260027",
+          "INC20260022",
+          "INC20260011",
+          "INC20260002",
+          "INC20260010",
+          "INC20260009",
+          "INC20260013",
+          "INC20260040",
+          "INC20260044"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260039"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-039",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260039",
+          "INC20260047",
+          "INC20260036",
+          "INC20260022",
+          "INC20260003",
+          "INC20260031",
+          "INC20260027",
+          "INC20260041",
+          "INC20260032",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260040"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-040",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260040",
+          "INC20260014",
+          "INC20260036",
+          "INC20260026",
+          "INC20260008",
+          "INC20260007",
+          "INC20260030",
+          "INC20260017",
+          "INC20260028",
+          "INC20260031"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8571428571428571,
+        "expected_ticket_ids": [
+          "INC20260041"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-041",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260039",
+          "INC20260046",
+          "INC20260018",
+          "INC20260030",
+          "INC20260032",
+          "INC20260042",
+          "INC20260014",
+          "INC20260001",
+          "INC20260022"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260042"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-042",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260042",
+          "INC20260012",
+          "INC20260044",
+          "INC20260022",
+          "INC20260028",
+          "INC20260036",
+          "INC20260013",
+          "INC20260011",
+          "INC20260025",
+          "INC20260005"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6666666666666666,
+        "expected_ticket_ids": [
+          "INC20260043"
+        ],
+        "ndcg_at_5": 0.43067655807339306,
+        "question_id": "GQ-043",
+        "rank": 4,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.25,
+        "retrieved_ticket_ids": [
+          "INC20260042",
+          "INC20260019",
+          "INC20260010",
+          "INC20260043",
+          "INC20260028",
+          "INC20260006",
+          "INC20260020",
+          "INC20260041",
+          "INC20260032",
+          "INC20260011"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.7,
+        "expected_ticket_ids": [
+          "INC20260044"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-044",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260044",
+          "INC20260048",
+          "INC20260040",
+          "INC20260014",
+          "INC20260029",
+          "INC20260033",
+          "INC20260020",
+          "INC20260035",
+          "INC20260036",
+          "INC20260009"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260045"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-045",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260045",
+          "INC20260026",
+          "INC20260003",
+          "INC20260036",
+          "INC20260030",
+          "INC20260031",
+          "INC20260027",
+          "INC20260041",
+          "INC20260032",
+          "INC20260025"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8888888888888888,
+        "expected_ticket_ids": [
+          "INC20260046"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-046",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260046",
+          "INC20260029",
+          "INC20260022",
+          "INC20260024",
+          "INC20260043",
+          "INC20260001",
+          "INC20260011",
+          "INC20260028",
+          "INC20260039",
+          "INC20260050"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.875,
+        "expected_ticket_ids": [
+          "INC20260047"
+        ],
+        "ndcg_at_5": 0.6309297535714575,
+        "question_id": "GQ-047",
+        "rank": 2,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5,
+        "retrieved_ticket_ids": [
+          "INC20260036",
+          "INC20260047",
+          "INC20260027",
+          "INC20260031",
+          "INC20260041",
+          "INC20260045",
+          "INC20260023",
+          "INC20260003",
+          "INC20260018",
+          "INC20260040"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.14285714285714285,
+        "expected_ticket_ids": [
+          "INC20260048"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-048",
+        "rank": 6,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.16666666666666666,
+        "retrieved_ticket_ids": [
+          "INC20260011",
+          "INC20260043",
+          "INC20260035",
+          "INC20260013",
+          "INC20260034",
+          "INC20260048",
+          "INC20260040",
+          "INC20260033",
+          "INC20260029",
+          "INC20260022"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.7,
+        "expected_ticket_ids": [
+          "INC20260049"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-049",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260049",
+          "INC20260027",
+          "INC20260043",
+          "INC20260021",
+          "INC20260009",
+          "INC20260036",
+          "INC20260025",
+          "INC20260039",
+          "INC20260035",
+          "INC20260026"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6,
+        "expected_ticket_ids": [
+          "INC20260050"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-050",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260050",
+          "INC20260012",
+          "INC20260039",
+          "INC20260043",
+          "INC20260023",
+          "INC20260022",
+          "INC20260048",
+          "INC20260011",
+          "INC20260035",
+          "INC20260013"
+        ],
+        "source_recall_at_5": 1.0
+      }
+    ],
+    "B_ticket_aware_hybrid": [
+      {
+        "evidence_coverage_at_5": 0.8888888888888888,
+        "expected_ticket_ids": [
+          "INC20260001"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-001",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260001",
+          "INC20260041",
+          "INC20260028",
+          "INC20260036",
+          "INC20260011",
+          "INC20260020",
+          "INC20260031",
+          "INC20260023",
+          "INC20260027",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.1,
+        "expected_ticket_ids": [
+          "INC20260002"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-002",
+        "rank": 8,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.125,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260047",
+          "INC20260029",
+          "INC20260039",
+          "INC20260024",
+          "INC20260012",
+          "INC20260031",
+          "INC20260002",
+          "INC20260022",
+          "INC20260009"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260003"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-003",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260003",
+          "INC20260046",
+          "INC20260047",
+          "INC20260027",
+          "INC20260049",
+          "INC20260026",
+          "INC20260021",
+          "INC20260035",
+          "INC20260029",
+          "INC20260043"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.5,
+        "expected_ticket_ids": [
+          "INC20260004"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-004",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260031",
+          "INC20260023",
+          "INC20260036",
+          "INC20260011",
+          "INC20260022",
+          "INC20260020",
+          "INC20260028",
+          "INC20260024",
+          "INC20260009"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260005"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-005",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260005",
+          "INC20260047",
+          "INC20260032",
+          "INC20260011",
+          "INC20260037",
+          "INC20260039",
+          "INC20260007",
+          "INC20260003",
+          "INC20260035",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260006"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-006",
+        "rank": 7,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.14285714285714285,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260027",
+          "INC20260026",
+          "INC20260023",
+          "INC20260048",
+          "INC20260005",
+          "INC20260006",
+          "INC20260036",
+          "INC20260035",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.1111111111111111,
+        "expected_ticket_ids": [
+          "INC20260007"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-007",
+        "rank": null,
+        "recall_at_1": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.0,
+        "retrieved_ticket_ids": [
+          "INC20260010",
+          "INC20260009",
+          "INC20260021",
+          "INC20260046",
+          "INC20260029",
+          "INC20260024",
+          "INC20260043",
+          "INC20260022",
+          "INC20260039",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.75,
+        "expected_ticket_ids": [
+          "INC20260008"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-008",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260008",
+          "INC20260016",
+          "INC20260036",
+          "INC20260014",
+          "INC20260004",
+          "INC20260011",
+          "INC20260022",
+          "INC20260031",
+          "INC20260030",
+          "INC20260013"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260009"
+        ],
+        "ndcg_at_5": 0.43067655807339306,
+        "question_id": "GQ-009",
+        "rank": 4,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.25,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260047",
+          "INC20260039",
+          "INC20260009",
+          "INC20260031",
+          "INC20260024",
+          "INC20260022",
+          "INC20260018",
+          "INC20260048",
+          "INC20260013"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260010"
+        ],
+        "ndcg_at_5": 0.6309297535714575,
+        "question_id": "GQ-010",
+        "rank": 2,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5,
+        "retrieved_ticket_ids": [
+          "INC20260009",
+          "INC20260010",
+          "INC20260038",
+          "INC20260019",
+          "INC20260008",
+          "INC20260025",
+          "INC20260030",
+          "INC20260037",
+          "INC20260015",
+          "INC20260005"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260011"
+        ],
+        "ndcg_at_5": 0.6309297535714575,
+        "question_id": "GQ-011",
+        "rank": 2,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260011",
+          "INC20260002",
+          "INC20260014",
+          "INC20260024",
+          "INC20260003",
+          "INC20260034",
+          "INC20260027",
+          "INC20260013",
+          "INC20260033"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260012"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-012",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260012",
+          "INC20260047",
+          "INC20260029",
+          "INC20260034",
+          "INC20260024",
+          "INC20260028",
+          "INC20260039",
+          "INC20260037",
+          "INC20260022",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260013"
+        ],
+        "ndcg_at_5": 0.38685280723454163,
+        "question_id": "GQ-013",
+        "rank": 5,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2,
+        "retrieved_ticket_ids": [
+          "INC20260002",
+          "INC20260012",
+          "INC20260011",
+          "INC20260017",
+          "INC20260013",
+          "INC20260003",
+          "INC20260027",
+          "INC20260018",
+          "INC20260031",
+          "INC20260042"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.2222222222222222,
+        "expected_ticket_ids": [
+          "INC20260014"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-014",
+        "rank": 7,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.14285714285714285,
+        "retrieved_ticket_ids": [
+          "INC20260005",
+          "INC20260011",
+          "INC20260028",
+          "INC20260003",
+          "INC20260042",
+          "INC20260043",
+          "INC20260014"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260015"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-015",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260015",
+          "INC20260047",
+          "INC20260037",
+          "INC20260010",
+          "INC20260030",
+          "INC20260005",
+          "INC20260013",
+          "INC20260039",
+          "INC20260035",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260016"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-016",
+        "rank": 9,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.1111111111111111,
+        "retrieved_ticket_ids": [
+          "INC20260047",
+          "INC20260009",
+          "INC20260010",
+          "INC20260039",
+          "INC20260032",
+          "INC20260035",
+          "INC20260029",
+          "INC20260037",
+          "INC20260016",
+          "INC20260015"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 0.0,
+        "expected_ticket_ids": [
+          "INC20260017"
+        ],
+        "ndcg_at_5": 0.0,
+        "question_id": "GQ-017",
+        "rank": 9,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 0.0,
+        "reciprocal_rank": 0.1111111111111111,
+        "retrieved_ticket_ids": [
+          "INC20260047",
+          "INC20260009",
+          "INC20260010",
+          "INC20260039",
+          "INC20260032",
+          "INC20260035",
+          "INC20260029",
+          "INC20260037",
+          "INC20260017",
+          "INC20260040"
+        ],
+        "source_recall_at_5": 0.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260018"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-018",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260018",
+          "INC20260007",
+          "INC20260024",
+          "INC20260048",
+          "INC20260023",
+          "INC20260045",
+          "INC20260004",
+          "INC20260040",
+          "INC20260027",
+          "INC20260042"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260019"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-019",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260019",
+          "INC20260006",
+          "INC20260030",
+          "INC20260031",
+          "INC20260008",
+          "INC20260032",
+          "INC20260005",
+          "INC20260025",
+          "INC20260027",
+          "INC20260037"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260020"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-020",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260020",
+          "INC20260029",
+          "INC20260030",
+          "INC20260024",
+          "INC20260007",
+          "INC20260005",
+          "INC20260002",
+          "INC20260034",
+          "INC20260037",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260021"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-021",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260021",
+          "INC20260007",
+          "INC20260008",
+          "INC20260029",
+          "INC20260041",
+          "INC20260027",
+          "INC20260006",
+          "INC20260040",
+          "INC20260048",
+          "INC20260015"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260022"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-022",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260022",
+          "INC20260039",
+          "INC20260024",
+          "INC20260035",
+          "INC20260033",
+          "INC20260045",
+          "INC20260042",
+          "INC20260002",
+          "INC20260041",
+          "INC20260040"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.75,
+        "expected_ticket_ids": [
+          "INC20260023"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-023",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260023",
+          "INC20260008",
+          "INC20260004",
+          "INC20260028",
+          "INC20260018",
+          "INC20260024",
+          "INC20260001",
+          "INC20260049",
+          "INC20260036",
+          "INC20260020"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260024"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-024",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260024",
+          "INC20260018",
+          "INC20260023",
+          "INC20260004",
+          "INC20260045",
+          "INC20260046",
+          "INC20260006",
+          "INC20260009",
+          "INC20260001",
+          "INC20260042"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260025"
+        ],
+        "ndcg_at_5": 0.38685280723454163,
+        "question_id": "GQ-025",
+        "rank": 5,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.2,
+        "retrieved_ticket_ids": [
+          "INC20260005",
+          "INC20260011",
+          "INC20260007",
+          "INC20260003",
+          "INC20260025",
+          "INC20260012",
+          "INC20260029",
+          "INC20260024",
+          "INC20260032",
+          "INC20260030"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6666666666666666,
+        "expected_ticket_ids": [
+          "INC20260026"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-026",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260026",
+          "INC20260049",
+          "INC20260041",
+          "INC20260021",
+          "INC20260046",
+          "INC20260045",
+          "INC20260008",
+          "INC20260023",
+          "INC20260013",
+          "INC20260006"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260027"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-027",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260027",
+          "INC20260041",
+          "INC20260031",
+          "INC20260004",
+          "INC20260003",
+          "INC20260013",
+          "INC20260036",
+          "INC20260009",
+          "INC20260039",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260028"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-028",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260028",
+          "INC20260001",
+          "INC20260023",
+          "INC20260009",
+          "INC20260008",
+          "INC20260049",
+          "INC20260043",
+          "INC20260011",
+          "INC20260035",
+          "INC20260046"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260029"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-029",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260029",
+          "INC20260041",
+          "INC20260020",
+          "INC20260024",
+          "INC20260018",
+          "INC20260045",
+          "INC20260026",
+          "INC20260010",
+          "INC20260034",
+          "INC20260021"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260030"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-030",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260030",
+          "INC20260034",
+          "INC20260018",
+          "INC20260025",
+          "INC20260028",
+          "INC20260038",
+          "INC20260033",
+          "INC20260020",
+          "INC20260022",
+          "INC20260023"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.625,
+        "expected_ticket_ids": [
+          "INC20260031"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-031",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260031",
+          "INC20260014",
+          "INC20260002",
+          "INC20260041",
+          "INC20260001",
+          "INC20260030",
+          "INC20260008",
+          "INC20260036",
+          "INC20260012",
+          "INC20260019"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8333333333333334,
+        "expected_ticket_ids": [
+          "INC20260032"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-032",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260032",
+          "INC20260039",
+          "INC20260042",
+          "INC20260045",
+          "INC20260003",
+          "INC20260046",
+          "INC20260008",
+          "INC20260018",
+          "INC20260023",
+          "INC20260006"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260033"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-033",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260033",
+          "INC20260031",
+          "INC20260045",
+          "INC20260011",
+          "INC20260034",
+          "INC20260039",
+          "INC20260046",
+          "INC20260035",
+          "INC20260041",
+          "INC20260013"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260034"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-034",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260034",
+          "INC20260041",
+          "INC20260026",
+          "INC20260023",
+          "INC20260024",
+          "INC20260036",
+          "INC20260047",
+          "INC20260010",
+          "INC20260021",
+          "INC20260030"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260035"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-035",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260035",
+          "INC20260022",
+          "INC20260029",
+          "INC20260039",
+          "INC20260037",
+          "INC20260041",
+          "INC20260032",
+          "INC20260047",
+          "INC20260024",
+          "INC20260030"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260036"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-036",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260036",
+          "INC20260031",
+          "INC20260021",
+          "INC20260037",
+          "INC20260020",
+          "INC20260049",
+          "INC20260041",
+          "INC20260048",
+          "INC20260044",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.625,
+        "expected_ticket_ids": [
+          "INC20260037"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-037",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260037",
+          "INC20260041",
+          "INC20260009",
+          "INC20260003",
+          "INC20260021",
+          "INC20260027",
+          "INC20260039",
+          "INC20260045",
+          "INC20260023",
+          "INC20260017"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260038"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-038",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260038",
+          "INC20260022",
+          "INC20260009",
+          "INC20260002",
+          "INC20260027",
+          "INC20260021",
+          "INC20260003",
+          "INC20260031",
+          "INC20260035",
+          "INC20260010"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260039"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-039",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260039",
+          "INC20260032",
+          "INC20260041",
+          "INC20260022",
+          "INC20260035",
+          "INC20260047",
+          "INC20260027",
+          "INC20260003",
+          "INC20260036",
+          "INC20260046"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260040"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-040",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260040",
+          "INC20260041",
+          "INC20260014",
+          "INC20260007",
+          "INC20260017",
+          "INC20260045",
+          "INC20260035",
+          "INC20260039",
+          "INC20260030",
+          "INC20260027"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8571428571428571,
+        "expected_ticket_ids": [
+          "INC20260041"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-041",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260039",
+          "INC20260018",
+          "INC20260001",
+          "INC20260030",
+          "INC20260049",
+          "INC20260046",
+          "INC20260021",
+          "INC20260048",
+          "INC20260022"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260042"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-042",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260042",
+          "INC20260041",
+          "INC20260036",
+          "INC20260013",
+          "INC20260011",
+          "INC20260005",
+          "INC20260033",
+          "INC20260021",
+          "INC20260014",
+          "INC20260023"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6666666666666666,
+        "expected_ticket_ids": [
+          "INC20260043"
+        ],
+        "ndcg_at_5": 0.6309297535714575,
+        "question_id": "GQ-043",
+        "rank": 2,
+        "recall_at_1": 0.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 0.5,
+        "retrieved_ticket_ids": [
+          "INC20260042",
+          "INC20260043",
+          "INC20260006",
+          "INC20260032",
+          "INC20260028",
+          "INC20260046",
+          "INC20260009",
+          "INC20260038",
+          "INC20260039",
+          "INC20260001"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.7,
+        "expected_ticket_ids": [
+          "INC20260044"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-044",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260044",
+          "INC20260014",
+          "INC20260027",
+          "INC20260040",
+          "INC20260029",
+          "INC20260033",
+          "INC20260046",
+          "INC20260025",
+          "INC20260013",
+          "INC20260036"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260045"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-045",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260045",
+          "INC20260026",
+          "INC20260003",
+          "INC20260041",
+          "INC20260032",
+          "INC20260014",
+          "INC20260040",
+          "INC20260025",
+          "INC20260030",
+          "INC20260027"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8888888888888888,
+        "expected_ticket_ids": [
+          "INC20260046"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-046",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260046",
+          "INC20260039",
+          "INC20260035",
+          "INC20260029",
+          "INC20260043",
+          "INC20260027",
+          "INC20260026",
+          "INC20260021",
+          "INC20260028",
+          "INC20260023"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.875,
+        "expected_ticket_ids": [
+          "INC20260047"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-047",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260047",
+          "INC20260027",
+          "INC20260041",
+          "INC20260023",
+          "INC20260024",
+          "INC20260036",
+          "INC20260046",
+          "INC20260029",
+          "INC20260014",
+          "INC20260005"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260048"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-048",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260048",
+          "INC20260013",
+          "INC20260040",
+          "INC20260021",
+          "INC20260011",
+          "INC20260043",
+          "INC20260034",
+          "INC20260035",
+          "INC20260046",
+          "INC20260033"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.7,
+        "expected_ticket_ids": [
+          "INC20260049"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-049",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260049",
+          "INC20260047",
+          "INC20260041",
+          "INC20260021",
+          "INC20260025",
+          "INC20260026",
+          "INC20260005",
+          "INC20260027",
+          "INC20260032",
+          "INC20260031"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6,
+        "expected_ticket_ids": [
+          "INC20260050"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-050",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260050",
+          "INC20260043",
+          "INC20260013",
+          "INC20260040",
+          "INC20260012",
+          "INC20260034",
+          "INC20260011",
+          "INC20260035",
+          "INC20260008",
+          "INC20260023"
+        ],
+        "source_recall_at_5": 1.0
+      }
+    ],
+    "C_ticket_aware_hybrid_reranker": [
+      {
+        "evidence_coverage_at_5": 0.8888888888888888,
+        "expected_ticket_ids": [
+          "INC20260001"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-001",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260001",
+          "INC20260020",
+          "INC20260041",
+          "INC20260028",
+          "INC20260036",
+          "INC20260011",
+          "INC20260023",
+          "INC20260031",
+          "INC20260027",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.9,
+        "expected_ticket_ids": [
+          "INC20260002"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-002",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260002",
+          "INC20260047",
+          "INC20260029",
+          "INC20260012",
+          "INC20260045",
+          "INC20260004",
+          "INC20260032",
+          "INC20260003",
+          "INC20260010",
+          "INC20260024"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260003"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-003",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260003",
+          "INC20260037",
+          "INC20260021",
+          "INC20260027",
+          "INC20260046",
+          "INC20260047",
+          "INC20260049",
+          "INC20260026",
+          "INC20260035",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.5,
+        "expected_ticket_ids": [
+          "INC20260004"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-004",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260004",
+          "INC20260023",
+          "INC20260036",
+          "INC20260019",
+          "INC20260031",
+          "INC20260022",
+          "INC20260041",
+          "INC20260011",
+          "INC20260020",
+          "INC20260028"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260005"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-005",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260005",
+          "INC20260047",
+          "INC20260025",
+          "INC20260032",
+          "INC20260011",
+          "INC20260037",
+          "INC20260030",
+          "INC20260015",
+          "INC20260010",
+          "INC20260039"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6666666666666666,
+        "expected_ticket_ids": [
+          "INC20260006"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-006",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260006",
+          "INC20260026",
+          "INC20260041",
+          "INC20260027",
+          "INC20260023",
+          "INC20260048",
+          "INC20260005",
+          "INC20260036",
+          "INC20260035",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.7777777777777778,
+        "expected_ticket_ids": [
+          "INC20260007"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-007",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260007",
+          "INC20260010",
+          "INC20260009",
+          "INC20260039",
+          "INC20260021",
+          "INC20260004",
+          "INC20260046",
+          "INC20260029",
+          "INC20260024",
+          "INC20260043"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.75,
+        "expected_ticket_ids": [
+          "INC20260008"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-008",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260008",
+          "INC20260016",
+          "INC20260036",
+          "INC20260014",
+          "INC20260004",
+          "INC20260011",
+          "INC20260022",
+          "INC20260031",
+          "INC20260030",
+          "INC20260013"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260009"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-009",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260009",
+          "INC20260047",
+          "INC20260041",
+          "INC20260039",
+          "INC20260031",
+          "INC20260024",
+          "INC20260022",
+          "INC20260018",
+          "INC20260048",
+          "INC20260013"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260010"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-010",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260010",
+          "INC20260009",
+          "INC20260019",
+          "INC20260038",
+          "INC20260008",
+          "INC20260025",
+          "INC20260030",
+          "INC20260037",
+          "INC20260015",
+          "INC20260005"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260011"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-011",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260011",
+          "INC20260041",
+          "INC20260002",
+          "INC20260014",
+          "INC20260024",
+          "INC20260003",
+          "INC20260034",
+          "INC20260027",
+          "INC20260013",
+          "INC20260033"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260012"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-012",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260012",
+          "INC20260047",
+          "INC20260029",
+          "INC20260034",
+          "INC20260024",
+          "INC20260028",
+          "INC20260039",
+          "INC20260037",
+          "INC20260022",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260013"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-013",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260013",
+          "INC20260002",
+          "INC20260003",
+          "INC20260027",
+          "INC20260018",
+          "INC20260031",
+          "INC20260042",
+          "INC20260024",
+          "INC20260009",
+          "INC20260039"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8888888888888888,
+        "expected_ticket_ids": [
+          "INC20260014"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-014",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260014",
+          "INC20260005",
+          "INC20260011",
+          "INC20260028",
+          "INC20260003",
+          "INC20260042",
+          "INC20260043"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260015"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-015",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260015",
+          "INC20260047",
+          "INC20260037",
+          "INC20260010",
+          "INC20260030",
+          "INC20260005",
+          "INC20260025",
+          "INC20260013",
+          "INC20260039",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260016"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-016",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260016",
+          "INC20260047",
+          "INC20260009",
+          "INC20260010",
+          "INC20260039",
+          "INC20260032",
+          "INC20260008",
+          "INC20260015",
+          "INC20260014",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8333333333333334,
+        "expected_ticket_ids": [
+          "INC20260017"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-017",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260017",
+          "INC20260047",
+          "INC20260009",
+          "INC20260039",
+          "INC20260010",
+          "INC20260040",
+          "INC20260032",
+          "INC20260029",
+          "INC20260035",
+          "INC20260037"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260018"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-018",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260018",
+          "INC20260024",
+          "INC20260004",
+          "INC20260007",
+          "INC20260048",
+          "INC20260023",
+          "INC20260045",
+          "INC20260040",
+          "INC20260027",
+          "INC20260042"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260019"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-019",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260019",
+          "INC20260006",
+          "INC20260030",
+          "INC20260031",
+          "INC20260008",
+          "INC20260023",
+          "INC20260001",
+          "INC20260028",
+          "INC20260036",
+          "INC20260032"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260020"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-020",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260020",
+          "INC20260001",
+          "INC20260029",
+          "INC20260030",
+          "INC20260008",
+          "INC20260019",
+          "INC20260023",
+          "INC20260031",
+          "INC20260028",
+          "INC20260036"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260021"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-021",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260021",
+          "INC20260038",
+          "INC20260035",
+          "INC20260008",
+          "INC20260009",
+          "INC20260025",
+          "INC20260007",
+          "INC20260036",
+          "INC20260028",
+          "INC20260003"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260022"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-022",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260022",
+          "INC20260039",
+          "INC20260024",
+          "INC20260031",
+          "INC20260004",
+          "INC20260035",
+          "INC20260033",
+          "INC20260045",
+          "INC20260042",
+          "INC20260002"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.75,
+        "expected_ticket_ids": [
+          "INC20260023"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-023",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260023",
+          "INC20260004",
+          "INC20260024",
+          "INC20260028",
+          "INC20260001",
+          "INC20260036",
+          "INC20260030",
+          "INC20260027",
+          "INC20260026",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260024"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-024",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260024",
+          "INC20260018",
+          "INC20260004",
+          "INC20260023",
+          "INC20260001",
+          "INC20260002",
+          "INC20260045",
+          "INC20260046",
+          "INC20260006",
+          "INC20260009"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260025"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-025",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260025",
+          "INC20260005",
+          "INC20260011",
+          "INC20260012",
+          "INC20260029",
+          "INC20260024",
+          "INC20260032",
+          "INC20260030",
+          "INC20260037",
+          "INC20260015"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6666666666666666,
+        "expected_ticket_ids": [
+          "INC20260026"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-026",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260026",
+          "INC20260021",
+          "INC20260049",
+          "INC20260041",
+          "INC20260046",
+          "INC20260045",
+          "INC20260008",
+          "INC20260023",
+          "INC20260013",
+          "INC20260006"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260027"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-027",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260027",
+          "INC20260041",
+          "INC20260031",
+          "INC20260004",
+          "INC20260003",
+          "INC20260013",
+          "INC20260036",
+          "INC20260009",
+          "INC20260039",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260028"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-028",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260028",
+          "INC20260001",
+          "INC20260044",
+          "INC20260011",
+          "INC20260035",
+          "INC20260046",
+          "INC20260018",
+          "INC20260041",
+          "INC20260008",
+          "INC20260023"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260029"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-029",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260029",
+          "INC20260020",
+          "INC20260024",
+          "INC20260025",
+          "INC20260041",
+          "INC20260018",
+          "INC20260045",
+          "INC20260026",
+          "INC20260010",
+          "INC20260034"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260030"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-030",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260030",
+          "INC20260028",
+          "INC20260010",
+          "INC20260034",
+          "INC20260025",
+          "INC20260020",
+          "INC20260023",
+          "INC20260038",
+          "INC20260024",
+          "INC20260004"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.625,
+        "expected_ticket_ids": [
+          "INC20260031"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-031",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260031",
+          "INC20260021",
+          "INC20260002",
+          "INC20260022",
+          "INC20260004",
+          "INC20260014",
+          "INC20260041",
+          "INC20260001",
+          "INC20260030",
+          "INC20260008"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8333333333333334,
+        "expected_ticket_ids": [
+          "INC20260032"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-032",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260032",
+          "INC20260039",
+          "INC20260045",
+          "INC20260003",
+          "INC20260042",
+          "INC20260046",
+          "INC20260008",
+          "INC20260018",
+          "INC20260023",
+          "INC20260006"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260033"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-033",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260033",
+          "INC20260045",
+          "INC20260011",
+          "INC20260046",
+          "INC20260031",
+          "INC20260039",
+          "INC20260035",
+          "INC20260034",
+          "INC20260041",
+          "INC20260013"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260034"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-034",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260034",
+          "INC20260041",
+          "INC20260026",
+          "INC20260023",
+          "INC20260024",
+          "INC20260036",
+          "INC20260047",
+          "INC20260010",
+          "INC20260021",
+          "INC20260030"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260035"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-035",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260035",
+          "INC20260039",
+          "INC20260022",
+          "INC20260029",
+          "INC20260037",
+          "INC20260041",
+          "INC20260032",
+          "INC20260047",
+          "INC20260024",
+          "INC20260030"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260036"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-036",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260036",
+          "INC20260021",
+          "INC20260031",
+          "INC20260037",
+          "INC20260020",
+          "INC20260003",
+          "INC20260001",
+          "INC20260049",
+          "INC20260041",
+          "INC20260048"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.625,
+        "expected_ticket_ids": [
+          "INC20260037"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-037",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260037",
+          "INC20260003",
+          "INC20260021",
+          "INC20260041",
+          "INC20260009",
+          "INC20260031",
+          "INC20260027",
+          "INC20260039",
+          "INC20260045",
+          "INC20260023"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260038"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-038",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260038",
+          "INC20260002",
+          "INC20260009",
+          "INC20260021",
+          "INC20260031",
+          "INC20260035",
+          "INC20260022",
+          "INC20260027",
+          "INC20260029",
+          "INC20260005"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260039"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-039",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260039",
+          "INC20260032",
+          "INC20260041",
+          "INC20260022",
+          "INC20260035",
+          "INC20260027",
+          "INC20260003",
+          "INC20260036",
+          "INC20260046",
+          "INC20260029"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260040"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-040",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260040",
+          "INC20260045",
+          "INC20260014",
+          "INC20260007",
+          "INC20260005",
+          "INC20260017",
+          "INC20260046",
+          "INC20260048",
+          "INC20260029",
+          "INC20260001"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8571428571428571,
+        "expected_ticket_ids": [
+          "INC20260041"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-041",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260041",
+          "INC20260044",
+          "INC20260018",
+          "INC20260049",
+          "INC20260021",
+          "INC20260048",
+          "INC20260039",
+          "INC20260031",
+          "INC20260001",
+          "INC20260030"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260042"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-042",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260042",
+          "INC20260021",
+          "INC20260045",
+          "INC20260041",
+          "INC20260036",
+          "INC20260013",
+          "INC20260011",
+          "INC20260005",
+          "INC20260033",
+          "INC20260014"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6666666666666666,
+        "expected_ticket_ids": [
+          "INC20260043"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-043",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260043",
+          "INC20260028",
+          "INC20260038",
+          "INC20260001",
+          "INC20260035",
+          "INC20260042",
+          "INC20260006",
+          "INC20260032",
+          "INC20260046",
+          "INC20260009"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.7,
+        "expected_ticket_ids": [
+          "INC20260044"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-044",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260044",
+          "INC20260027",
+          "INC20260014",
+          "INC20260025",
+          "INC20260013",
+          "INC20260028",
+          "INC20260041",
+          "INC20260040",
+          "INC20260029",
+          "INC20260033"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260045"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-045",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260045",
+          "INC20260026",
+          "INC20260043",
+          "INC20260003",
+          "INC20260041",
+          "INC20260032",
+          "INC20260014",
+          "INC20260040",
+          "INC20260025",
+          "INC20260030"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.8888888888888888,
+        "expected_ticket_ids": [
+          "INC20260046"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-046",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260046",
+          "INC20260035",
+          "INC20260044",
+          "INC20260049",
+          "INC20260050",
+          "INC20260047",
+          "INC20260039",
+          "INC20260029",
+          "INC20260043",
+          "INC20260027"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.875,
+        "expected_ticket_ids": [
+          "INC20260047"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-047",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260047",
+          "INC20260027",
+          "INC20260041",
+          "INC20260023",
+          "INC20260036",
+          "INC20260029",
+          "INC20260024",
+          "INC20260046",
+          "INC20260014",
+          "INC20260005"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 1.0,
+        "expected_ticket_ids": [
+          "INC20260048"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-048",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260048",
+          "INC20260021",
+          "INC20260013",
+          "INC20260043",
+          "INC20260035",
+          "INC20260046",
+          "INC20260033",
+          "INC20260008",
+          "INC20260023",
+          "INC20260014"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.7,
+        "expected_ticket_ids": [
+          "INC20260049"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-049",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260049",
+          "INC20260024",
+          "INC20260041",
+          "INC20260047",
+          "INC20260026",
+          "INC20260021",
+          "INC20260025",
+          "INC20260005",
+          "INC20260027",
+          "INC20260032"
+        ],
+        "source_recall_at_5": 1.0
+      },
+      {
+        "evidence_coverage_at_5": 0.6,
+        "expected_ticket_ids": [
+          "INC20260050"
+        ],
+        "ndcg_at_5": 1.0,
+        "question_id": "GQ-050",
+        "rank": 1,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "retrieved_ticket_ids": [
+          "INC20260050",
+          "INC20260006",
+          "INC20260031",
+          "INC20260043",
+          "INC20260013",
+          "INC20260040",
+          "INC20260012",
+          "INC20260034",
+          "INC20260011",
+          "INC20260035"
+        ],
+        "source_recall_at_5": 1.0
+      }
+    ]
+  },
+  "validation": {
+    "golden_questions": 50,
+    "versions": [
+      {
+        "documents": 50,
+        "version": "tickets-v1.0"
+      },
+      {
+        "documents": 50,
+        "version": "tickets-v1.1-cleaned"
+      },
+      {
+        "documents": 50,
+        "version": "tickets-v1.2-pii-redacted"
+      },
+      {
+        "documents": 50,
+        "version": "tickets-v2.0-ticket-aware-chunking"
+      }
+    ]
+  }
+}

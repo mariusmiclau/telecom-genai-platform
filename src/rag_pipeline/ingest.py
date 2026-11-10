@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -20,9 +21,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-import chromadb
-from chromadb.config import Settings
-from langchain.text_splitter import (
+from langchain_text_splitters import (
     MarkdownTextSplitter,
     RecursiveCharacterTextSplitter,
 )
@@ -46,6 +45,7 @@ class DocumentType(Enum):
     MD = "md"
     CONFIG = "config"  # Network configuration files
     SLA = "sla"  # Service Level Agreement documents
+    TICKET = "ticket"  # ITSM/NOC ticket exports (JSONL)
 
 
 @dataclass
@@ -82,8 +82,25 @@ class Chunk:
         return f"{self.document_id}_{self.chunk_index}"
 
 
+@dataclass
+class IngestionResult:
+    """Summary returned by API-oriented ingestion methods."""
+
+    chunks_created: int
+    documents_processed: int
+    stored: int = 0
+    updated: int = 0
+    skipped: int = 0
+
+
 class ChunkingStrategy(ABC):
     """Base class for chunking strategies."""
+
+    # Stable names retained for callers selecting a strategy dynamically.
+    PROSE = "prose"
+    MARKDOWN = "markdown"
+    NETWORK_CONFIG = "network_config"
+    SEMANTIC = "semantic"
 
     @abstractmethod
     def chunk(self, document: Document) -> list[Chunk]:
@@ -136,7 +153,7 @@ class MarkdownChunker(ChunkingStrategy):
 
     def chunk(self, document: Document) -> list[Chunk]:
         texts = self.splitter.split_text(document.content)
-        chunks = []
+        chunks: list[Chunk] = []
 
         for i, text in enumerate(texts):
             # Extract section header if present
@@ -197,7 +214,7 @@ class SemanticChunker(ChunkingStrategy):
         content = document.content
         sections = self._split_by_sections(content)
 
-        chunks = []
+        chunks: list[Chunk] = []
         for section_title, section_content in sections:
             # Further split large sections
             if len(section_content) > self.max_chunk_size:
@@ -310,7 +327,7 @@ class NetworkConfigChunker(ChunkingStrategy):
 
     def chunk(self, document: Document) -> list[Chunk]:
         content = document.content
-        chunks = []
+        chunks: list[Chunk] = []
         seen_content = set()
 
         # Try to extract config blocks
@@ -408,6 +425,93 @@ class NetworkConfigChunker(ChunkingStrategy):
             return "general"
 
 
+class TicketChunker(ChunkingStrategy):
+    """Field-aware chunking for JSON/JSONL ITSM ticket exports.
+
+    Identity fields are repeated in every chunk so an opaque node ID or ticket
+    ID remains connected to incident symptoms, root cause, and resolution.
+    Invalid records are rejected individually rather than failing the snapshot.
+    """
+
+    REQUIRED_FIELDS = {"ticket_id", "summary", "source"}
+    FIELD_GROUPS = {
+        "identity": [
+            "ticket_id", "status", "severity", "region", "element_id",
+            "interface", "service", "runbook_id",
+        ],
+        "incident": [
+            "ticket_id", "element_id", "interface", "summary", "description", "symptoms",
+        ],
+        "resolution": [
+            "ticket_id", "element_id", "runbook_id", "root_cause", "resolution",
+        ],
+    }
+
+    def chunk(self, document: Document) -> list[Chunk]:
+        records = self._parse_records(document.content)
+        from src.evaluation.retrieval import render_ticket
+        chunks: list[Chunk] = []
+        rejected = 0
+        for record in records:
+            if not self.REQUIRED_FIELDS.issubset(record):
+                rejected += 1
+                continue
+            for group, fields in self.FIELD_GROUPS.items():
+                selected = {field: str(record.get(field, "")) for field in fields}
+                content = "\n".join(
+                    f"{field}: {value}" for field, value in selected.items() if value
+                )
+                chunks.append(
+                    Chunk(
+                        content=content,
+                        document_id=document.document_id,
+                        chunk_index=len(chunks),
+                        metadata={
+                            **document.metadata,
+                            "source_path": record["source"],
+                            "document_type": DocumentType.TICKET.value,
+                            "chunk_strategy": "ticket-aware",
+                            "ticket_id": record["ticket_id"],
+                            "ticket_text": render_ticket(record),
+                            "runbook_id": str(record.get("runbook_id", "")),
+                            "service": str(record.get("service", "")),
+                            "ticket_chunk_group": group,
+                            "element_id": str(record.get("element_id", "")),
+                            "interface": str(record.get("interface", "")),
+                            "region": str(record.get("region", "")),
+                        },
+                    )
+                )
+        if rejected:
+            logger.warning("Rejected %s ticket records missing required fields", rejected)
+        return chunks
+
+    def _parse_records(self, content: str) -> list[dict[str, Any]]:
+        stripped = content.strip()
+        if not stripped:
+            return []
+        try:
+            value = json.loads(stripped)
+            if isinstance(value, dict):
+                return [value]
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+        except json.JSONDecodeError:
+            pass
+        records = []
+        for line_number, line in enumerate(stripped.splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                value = json.loads(line)
+            except json.JSONDecodeError:
+                logger.warning("Rejected invalid JSONL ticket at line %s", line_number)
+                continue
+            if isinstance(value, dict):
+                records.append(value)
+        return records
+
+
 class DocumentIngester:
     """
     Main document ingestion class.
@@ -428,6 +532,7 @@ class DocumentIngester:
         ".cfg": DocumentType.CONFIG,
         ".config": DocumentType.CONFIG,
         ".sla": DocumentType.SLA,
+        ".jsonl": DocumentType.TICKET,
     }
 
     # Filename patterns that indicate SLA documents (case-insensitive)
@@ -449,7 +554,77 @@ class DocumentIngester:
             DocumentType.MD: self._load_text,
             DocumentType.CONFIG: self._load_text,
             DocumentType.SLA: self._load_text,  # SLA docs use text loader
+            DocumentType.TICKET: self._load_ticket_export,
         }
+
+    def _chunk_text(
+        self,
+        text: str,
+        strategy: str,
+        chunk_size: int = 1000,
+        overlap: int = 200,
+    ) -> list[str]:
+        """Chunk ad-hoc text using the same strategies as the ingestion pipeline."""
+        document_type = DocumentType.TXT
+        if strategy == ChunkingStrategy.MARKDOWN:
+            chunker: ChunkingStrategy = MarkdownChunker(chunk_size, overlap)
+            document_type = DocumentType.MD
+        elif strategy == ChunkingStrategy.NETWORK_CONFIG:
+            chunker = NetworkConfigChunker(max_chunk_size=chunk_size)
+            document_type = DocumentType.CONFIG
+        elif strategy == ChunkingStrategy.SEMANTIC:
+            chunker = SemanticChunker(
+                min_chunk_size=min(50, max(1, chunk_size // 3)),
+                max_chunk_size=chunk_size,
+            )
+            document_type = DocumentType.SLA
+        else:
+            chunker = ProseChunker(chunk_size, overlap)
+        document = Document(
+            content=text,
+            source_path="inline",
+            document_type=document_type,
+        )
+        return [chunk.content for chunk in chunker.chunk(document)]
+
+    async def ingest(
+        self,
+        source_path: str,
+        doc_type: str = "auto",
+        metadata: dict[str, Any] | None = None,
+    ) -> IngestionResult:
+        """Load, chunk, embed, and store a source for the REST ingestion API."""
+        del doc_type  # File extension/content detection is canonical.
+        pipeline = IngestionPipeline(
+            chroma_host=os.getenv("CHROMA_HOST", "localhost"),
+            chroma_port=int(os.getenv("CHROMA_PORT", "8100")),
+        )
+        documents = pipeline.load_documents(source_path)
+        for document in documents:
+            document.metadata.update(metadata or {})
+        chunks = pipeline.chunk_documents(documents)
+        stats = await pipeline.store_embeddings(
+            chunks,
+            os.getenv("CHROMA_COLLECTION", "telecom_kb"),
+        )
+        return IngestionResult(
+            chunks_created=len(chunks),
+            documents_processed=len(documents),
+            **stats,
+        )
+
+    async def ingest_upload(self, upload: Any) -> IngestionResult:
+        """Persist an uploaded file temporarily and pass it through ingestion."""
+        suffix = Path(upload.filename or "upload.txt").suffix or ".txt"
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as handle:
+                temporary_path = Path(handle.name)
+                handle.write(await upload.read())
+            return await self.ingest(str(temporary_path))
+        finally:
+            if temporary_path and temporary_path.exists():
+                temporary_path.unlink()
 
     def load_documents(self, source_path: str) -> list[Document]:
         """
@@ -526,11 +701,11 @@ class DocumentIngester:
         import csv
 
         content_lines = []
-        metadata = {"row_count": 0, "columns": []}
+        metadata: dict[str, Any] = {"row_count": 0, "columns": []}
 
         with open(file_path, "r", encoding="utf-8") as f:
             reader = csv.reader(f)
-            headers = next(reader, [])
+            headers: list[str] = next(reader, [])
             metadata["columns"] = headers
 
             content_lines.append(" | ".join(headers))
@@ -625,7 +800,7 @@ class DocumentIngester:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        metadata = {
+        metadata: dict[str, Any] = {
             "line_count": content.count("\n") + 1,
             "char_count": len(content),
         }
@@ -636,6 +811,12 @@ class DocumentIngester:
             metadata["region"] = region_match.group(1)
 
         return content, metadata
+
+    def _load_ticket_export(self, file_path: Path) -> tuple[str, dict]:
+        """Load a JSONL ticket snapshot without flattening record boundaries."""
+        content = file_path.read_text(encoding="utf-8")
+        record_count = sum(1 for line in content.splitlines() if line.strip())
+        return content, {"record_count": record_count, "structured_type": "ticket_export"}
 
 
 class IngestionPipeline:
@@ -657,6 +838,8 @@ class IngestionPipeline:
         self._embedding_service: EmbeddingService | None = None
 
         # Initialize ChromaDB client
+        import chromadb
+        from chromadb.config import Settings
         self.chroma_client = chromadb.HttpClient(
             host=chroma_host,
             port=chroma_port,
@@ -674,6 +857,7 @@ class IngestionPipeline:
             DocumentType.JSON: ProseChunker(chunk_size=1500, chunk_overlap=100),
             DocumentType.XML: ProseChunker(chunk_size=1500, chunk_overlap=100),
             DocumentType.SLA: SemanticChunker(min_chunk_size=200, max_chunk_size=2000),
+            DocumentType.TICKET: TicketChunker(),
         }
 
     def load_documents(self, source_path: str) -> list[Document]:

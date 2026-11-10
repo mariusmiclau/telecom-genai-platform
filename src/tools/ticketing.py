@@ -9,7 +9,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from src.tools.registry import BaseTool, ToolResult
 
@@ -29,7 +29,7 @@ class Ticket:
     assignee: Optional[str] = None
     created_at: str = ""
     region: Optional[str] = None
-    affected_elements: list[str] = None
+    affected_elements: Optional[list[str]] = None
 
     def __post_init__(self):
         if not self.created_at:
@@ -210,6 +210,7 @@ class TicketQueryTool(BaseTool):
 
         tickets = TicketCreatorTool._tickets
 
+        data: dict[str, Any]
         if ticket_id:
             # Get specific ticket
             ticket = tickets.get(ticket_id)
@@ -225,7 +226,7 @@ class TicketQueryTool(BaseTool):
             for t in tickets.values():
                 if status_filter and t.status != status_filter:
                     continue
-                if element_id and element_id not in t.affected_elements:
+                if element_id and element_id not in (t.affected_elements or []):
                     continue
                 results.append(t.__dict__)
 

@@ -3,10 +3,11 @@
 Filters PII and sensitive information from responses before returning to users.
 """
 
+import dataclasses
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -16,15 +17,15 @@ class FilteredResponse:
     """Result of output filtering."""
 
     text: str
-    sources: list[str] = field(default_factory=list)
+    sources: list[Any] = field(default_factory=list)
     pii_removed: int = 0
     filtered_types: list[str] = field(default_factory=list)
 
 
 # PII patterns with named groups for identification
 PII_PATTERNS = {
-    "phone_us": r"\b(?:\+1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b",
-    "phone_intl": r"\b\+[1-9][0-9]{7,14}\b",
+    "phone_us": r"(?<!\w)(?:\+1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b",
+    "phone_intl": r"(?<!\w)\+[1-9][0-9]{7,14}\b",
     "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
     "ipv4": r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b",
     "ipv6": r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b",
@@ -105,7 +106,7 @@ class OutputFilter:
     def apply(
         self,
         response: str,
-        sources: Optional[list[str]] = None,
+        sources: Optional[list[Any]] = None,
     ) -> FilteredResponse:
         """Apply output filtering to a response.
 
@@ -177,7 +178,7 @@ class OutputFilter:
             filtered_types=list(set(filtered_types)),
         )
 
-    def _filter_source(self, source: str) -> str:
+    def _filter_source(self, source: Any) -> Any:
         """Filter PII from a source reference.
 
         Args:
@@ -186,6 +187,15 @@ class OutputFilter:
         Returns:
             Filtered source string
         """
+        if not isinstance(source, str):
+            fields = {name: self._filter_source(getattr(source, name))
+                      for name in ("document", "section", "excerpt")
+                      if isinstance(getattr(source, name, None), str)}
+            if dataclasses.is_dataclass(source) and not isinstance(source, type):
+                return dataclasses.replace(source, **fields)
+            if hasattr(source, "model_copy"):
+                return source.model_copy(update=fields)
+            return source
         filtered = source
         for pii_type, pattern in self.pii_patterns.items():
             replacement = PII_REPLACEMENTS.get(pii_type, "[REDACTED]")

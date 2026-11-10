@@ -14,10 +14,12 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Optional
 
-from src.rag_pipeline.retriever import HybridRetriever
-from src.rag_pipeline.chain import RAGChain
 from src.agents.memory import ConversationMemory
 from src.agents.reasoning import ReasoningEngine
+from src.guardrails.hallucination import HallucinationDetector
+from src.monitoring.tracing import content_attributes, trace_span
+from src.rag_pipeline.chain import RAGChain
+from src.rag_pipeline.retriever import HybridRetriever
 from src.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ class AgentResult:
     response: str
     sources: list
     confidence: float
+    grounding_score: float = 0.0
     tools_called: list[ToolCall] = field(default_factory=list)
     tokens_used: int = 0
     reasoning_steps: list[str] = field(default_factory=list)
@@ -55,22 +58,25 @@ class AgentOrchestrator:
     - Conversation memory for multi-turn context
     """
 
-    def __init__(self):
-        self.retriever = HybridRetriever()
-        self.rag_chain = RAGChain()
-        self.memory = ConversationMemory()
+    def __init__(self, retriever=None, rag_chain=None, memory=None, enable_tools=True):
+        self.retriever = retriever or HybridRetriever()
+        self.rag_chain = rag_chain or RAGChain()
+        self.memory = memory or ConversationMemory()
+        self.enable_tools = enable_tools
         self.reasoning = ReasoningEngine()
         self.tools = ToolRegistry()
+        self.grounding_detector = HallucinationDetector()
 
         # Register telecom-specific tools
-        self._register_tools()
+        if enable_tools:
+            self._register_tools()
 
     def _register_tools(self):
         """Register available tools for agent use."""
-        from src.tools.network import NetworkHealthTool, NetworkConfigTool
-        from src.tools.ticketing import TicketCreatorTool
-        from src.tools.sla import SLAMonitorTool
         from src.tools.config import ConfigValidatorTool
+        from src.tools.network import NetworkConfigTool, NetworkHealthTool
+        from src.tools.sla import SLAMonitorTool
+        from src.tools.ticketing import TicketCreatorTool
 
         self.tools.register(NetworkHealthTool())
         self.tools.register(NetworkConfigTool())
@@ -84,7 +90,27 @@ class AgentOrchestrator:
         session_id: Optional[str] = None,
         context: Optional[dict] = None,
     ) -> AgentResult:
-        """Process a user message through the agent pipeline.
+        """Process and trace a user message through the complete agent pipeline."""
+        session_id = session_id or str(uuid.uuid4())
+        attributes = {
+            **content_attributes(message),
+            "session.id": session_id,
+            "telecom.request.context": context or {},
+        }
+        with trace_span("query", attributes) as span:
+            result = await self._process(message, session_id, context)
+            span.set_attribute("genai.response.confidence", result.confidence)
+            span.set_attribute("genai.response.grounding_score", result.grounding_score)
+            span.set_attribute("genai.response.source_count", len(result.sources))
+            return result
+
+    async def _process(
+        self,
+        message: str,
+        session_id: str,
+        context: Optional[dict] = None,
+    ) -> AgentResult:
+        """Execute the agent pipeline inside the request's root query span.
 
         Args:
             message: User's input message
@@ -94,7 +120,6 @@ class AgentOrchestrator:
         Returns:
             AgentResult with response, sources, confidence, and metadata
         """
-        session_id = session_id or str(uuid.uuid4())
         reasoning_steps = []
         tools_called = []
 
@@ -112,6 +137,12 @@ class AgentOrchestrator:
         )
         reasoning_steps.append(f"Intent classified: {intent.category}")
 
+        if intent.requires_tools and not self.enable_tools:
+            return AgentResult(
+                response="This request requires an operational integration. Contact the network operations team; live actions are disabled in this release.",
+                sources=[], confidence=0.0, reasoning_steps=["escalate: operational action"],
+            )
+
         # Step 3: Retrieve relevant context from RAG
         rag_context = await self.retriever.search(
             query=message,
@@ -119,6 +150,12 @@ class AgentOrchestrator:
             filters=context,
         )
         reasoning_steps.append(f"Retrieved {len(rag_context.documents)} relevant documents")
+
+        if not rag_context.documents:
+            return AgentResult(
+                response="No supporting evidence was found. Please refine the question or escalate to a network engineer.",
+                sources=[], confidence=0.0, reasoning_steps=["abstain: no evidence"],
+            )
 
         # Step 4: Execute tool calls if needed
         if intent.requires_tools:
@@ -149,12 +186,39 @@ class AgentOrchestrator:
             system_context=self._build_system_context(context),
         )
 
-        # Step 6: Calculate confidence based on source grounding
-        confidence = self._calculate_confidence(
+        if response.finish_reason == "error":
+            raise RuntimeError("Model provider unavailable")
+
+        # Step 6: Check grounding and calculate confidence
+        source_evidence = [
+            {
+                "content": document.content,
+                "source": document.source_path,
+                "metadata": document.metadata,
+            }
+            for document in rag_context.documents
+        ]
+        with trace_span("grounding_check") as span:
+            grounding = self.grounding_detector.check_grounding(
+                response=response.text,
+                source_documents=source_evidence,
+                tool_results=[tool.output for tool in tools_called],
+            )
+            span.set_attribute("genai.grounding.is_grounded", grounding.is_grounded)
+            span.set_attribute("genai.grounding.score", grounding.grounding_score)
+            span.set_attribute("genai.grounding.ungrounded_claims", len(grounding.ungrounded_claims))
+
+        retrieval_confidence = self._calculate_confidence(
             response=response,
             sources=rag_context.documents,
             tool_results=tools_called,
         )
+        confidence = min(retrieval_confidence, grounding.grounding_score)
+        if not grounding.is_grounded or not response.sources or response.finish_reason != "stop":
+            response.text = "The generated answer could not be verified against the retrieved evidence. Please escalate to a network engineer."
+            response.sources = []
+            confidence = 0.0
+            reasoning_steps.append("abstain: grounding, citation or completion check failed")
         reasoning_steps.append(f"Confidence score: {confidence:.2f}")
 
         # Step 7: Save to conversation memory
@@ -165,14 +229,23 @@ class AgentOrchestrator:
             sources=[s.document_id for s in rag_context.documents],
         )
 
-        return AgentResult(
-            response=response.text,
-            sources=response.sources,
-            confidence=confidence,
-            tools_called=tools_called,
-            tokens_used=response.tokens_used,
-            reasoning_steps=reasoning_steps,
-        )
+        with trace_span(
+            "final_response",
+            {
+                "genai.response.characters": len(response.text),
+                "genai.response.confidence": confidence,
+                "genai.response.finish_reason": response.finish_reason,
+            },
+        ):
+            return AgentResult(
+                response=response.text,
+                sources=response.sources,
+                confidence=confidence,
+                grounding_score=grounding.grounding_score,
+                tools_called=tools_called,
+                tokens_used=response.tokens_used,
+                reasoning_steps=reasoning_steps,
+            )
 
     def _build_system_context(self, context: Optional[dict]) -> str:
         """Build system context prompt for telecom domain."""

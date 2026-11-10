@@ -1,168 +1,102 @@
-"""API routes for the Telecom GenAI Platform."""
+"""HTTP adapters for the managed runtime."""
 
+import asyncio
 import logging
 import time
-from typing import Optional
+import uuid
+from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
-from src.api.models import ChatRequest, ChatResponse, IngestRequest, IngestResponse
-from src.agents.orchestrator import AgentOrchestrator
-from src.rag_pipeline.ingest import DocumentIngester
+from src.api.models import ChatRequest, ChatResponse, IngestRequest, IngestResponse, SourceReference
 from src.guardrails.input_filter import InputFilter
 from src.guardrails.output_filter import OutputFilter
 from src.monitoring.metrics import (
+    HALLUCINATION_SCORE,
     REQUEST_COUNT,
     REQUEST_LATENCY,
-    HALLUCINATION_SCORE,
     track_token_usage,
 )
+from src.monitoring.tracing import current_trace_id
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
-
-# Initialize components
-orchestrator = AgentOrchestrator()
-ingester = DocumentIngester()
+logger = logging.getLogger(__name__)
 input_filter = InputFilter()
 output_filter = OutputFilter()
 
 
+def validate_query(message):
+    result = input_filter.validate(message)
+    if not result.is_safe:
+        raise HTTPException(400, "Input rejected by safety checks")
+
+
+@router.post("/demo/chat", response_model=ChatResponse)
+async def demo_chat(payload: ChatRequest, request: Request):
+    validate_query(payload.message)
+    runtime = request.app.state.runtime
+    if runtime.demo is None:
+        raise HTTPException(503, "Demo is starting; try again shortly")
+    async with asyncio.timeout(runtime.settings.request_timeout_seconds):
+        async with runtime.capacity:
+            result = await asyncio.to_thread(runtime.demo.answer, payload.message)
+    sources = [SourceReference(
+        document=hit.source, section=hit.ticket_id, relevance_score=result.confidence,
+    ) for hit in result.hits[:1]]
+    filtered = output_filter.apply(result.text, sources)
+    return ChatResponse(
+        response=filtered.text, sources=filtered.sources, confidence=result.confidence,
+        tools_used=["offline_hybrid_retrieval", "weighted_rank_fusion", "field_reranker"],
+        session_id=payload.session_id, trace_id=result.trace_id,
+        outcome="answered" if sources else "abstained", mode="demo",
+    )
+
+
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Process a chat message through the AI agent pipeline.
-
-    Flow:
-    1. Input guardrails (injection detection, validation)
-    2. Agent orchestration (RAG + tool-calling + reasoning)
-    3. Output guardrails (PII filter, hallucination check)
-    4. Response with sources and confidence score
-    """
-    start_time = time.time()
+async def chat(payload: ChatRequest, request: Request):
+    validate_query(payload.message)
+    runtime = request.app.state.runtime
+    if runtime.agent is None:
+        raise HTTPException(503, "Live runtime is not ready")
+    session_id = payload.session_id or str(uuid.uuid4())
+    start = time.monotonic()
     REQUEST_COUNT.labels(endpoint="/chat", method="POST").inc()
-
     try:
-        # Step 1: Input guardrails
-        input_check = input_filter.validate(request.message)
-        if not input_check.is_safe:
-            logger.warning(
-                "Input blocked by guardrails",
-                extra={"reason": input_check.reason, "session": request.session_id},
-            )
-            raise HTTPException(
-                status_code=400,
-                detail=f"Input validation failed: {input_check.reason}",
-            )
-
-        # Step 2: Agent orchestration
-        result = await orchestrator.process(
-            message=request.message,
-            session_id=request.session_id,
-            context=request.context,
-        )
-
-        # Step 3: Output guardrails
-        filtered_response = output_filter.apply(
-            response=result.response,
-            sources=result.sources,
-        )
-
-        # Step 4: Track metrics
-        latency = time.time() - start_time
-        REQUEST_LATENCY.labels(endpoint="/chat").observe(latency)
+        async with asyncio.timeout(runtime.settings.request_timeout_seconds):
+            async with runtime.capacity:
+                result = await runtime.agent.process(payload.message, session_id, payload.context)
+        filtered = output_filter.apply(result.response, result.sources)
         HALLUCINATION_SCORE.observe(result.confidence)
         track_token_usage(result.tokens_used)
-
-        logger.info(
-            "Chat processed",
-            extra={
-                "session": request.session_id,
-                "latency_ms": round(latency * 1000),
-                "confidence": result.confidence,
-                "tools_called": [t.name for t in result.tools_called],
-                "sources_count": len(result.sources),
-            },
-        )
-
         return ChatResponse(
-            response=filtered_response.text,
-            sources=filtered_response.sources,
-            confidence=result.confidence,
-            tools_used=[t.name for t in result.tools_called],
-            session_id=request.session_id,
+            response=filtered.text, sources=filtered.sources, confidence=result.confidence,
+            tools_used=[tool.name for tool in result.tools_called], session_id=session_id,
+            trace_id=current_trace_id(), outcome="answered" if filtered.sources else "abstained", mode="live",
         )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Chat processing error: {e}", exc_info=True)
+    except TimeoutError:
+        raise HTTPException(504, "Request deadline exceeded") from None
+    except Exception:
+        logger.exception("Chat request failed")
         REQUEST_COUNT.labels(endpoint="/chat", method="POST_ERROR").inc()
-        raise HTTPException(status_code=500, detail="Internal processing error")
+        raise HTTPException(503, "A required dependency is unavailable") from None
+    finally:
+        REQUEST_LATENCY.labels(endpoint="/chat").observe(time.monotonic() - start)
+
+
+def allowed_source(source: str, root: Path) -> Path:
+    path = Path(source).resolve()
+    if not path.is_relative_to(root.resolve()) or not path.is_file():
+        raise HTTPException(400, "Source must be a file inside INGESTION_ROOT")
+    return path
 
 
 @router.post("/ingest", response_model=IngestResponse)
-async def ingest_documents(request: IngestRequest):
-    """Ingest documents into the RAG knowledge base.
-
-    Supports: PDF, DOCX, TXT, CSV, JSON, XML
-    Applies telecom-optimized chunking strategies.
-    """
-    REQUEST_COUNT.labels(endpoint="/ingest", method="POST").inc()
-
-    try:
-        result = await ingester.ingest(
-            source_path=request.source_path,
-            doc_type=request.doc_type,
-            metadata=request.metadata,
-        )
-
-        logger.info(
-            "Documents ingested",
-            extra={
-                "source": request.source_path,
-                "chunks_created": result.chunks_created,
-                "doc_type": request.doc_type,
-            },
-        )
-
-        return IngestResponse(
-            status="success",
-            chunks_created=result.chunks_created,
-            documents_processed=result.documents_processed,
-        )
-
-    except Exception as e:
-        logger.error(f"Ingestion error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+async def ingest(payload: IngestRequest, request: Request):
+    allowed_source(payload.source_path, request.app.state.settings.ingestion_root)
+    raise HTTPException(409, "Use the ingestion CLI and validate the collection before restarting live mode")
 
 
-@router.post("/ingest/upload")
-async def upload_and_ingest(file: UploadFile = File(...)):
-    """Upload a file and ingest it into the knowledge base."""
-    REQUEST_COUNT.labels(endpoint="/ingest/upload", method="POST").inc()
-
-    allowed_types = {
-        "application/pdf",
-        "text/plain",
-        "text/csv",
-        "application/json",
-        "application/xml",
-    }
-
-    if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file type: {file.content_type}",
-        )
-
-    try:
-        result = await ingester.ingest_upload(file)
-        return IngestResponse(
-            status="success",
-            chunks_created=result.chunks_created,
-            documents_processed=1,
-        )
-    except Exception as e:
-        logger.error(f"Upload ingestion error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/ingest/upload", response_model=IngestResponse)
+async def upload(request: Request, file: UploadFile = File(...)):
+    await file.close()
+    raise HTTPException(409, "HTTP ingestion is disabled; use the operator ingestion CLI")

@@ -140,7 +140,8 @@ class HallucinationDetector:
         claims = []
 
         # Split into sentences
-        sentences = re.split(r'[.!?]+', text)
+        # Keep decimal values (for example 99.99%) inside one sentence.
+        sentences = re.split(r'(?<!\d)[.!?]+(?!\d)', text)
 
         for sentence in sentences:
             sentence = sentence.strip()
@@ -205,7 +206,7 @@ class HallucinationDetector:
         # Calculate confidence
         confidence = match_ratio * 0.7 + (0.3 if numbers_match else 0)
 
-        is_grounded = confidence >= self.similarity_threshold
+        is_grounded = confidence >= self.similarity_threshold and numbers_match
 
         # Find supporting source if grounded
         supporting_source = None
@@ -240,7 +241,8 @@ class HallucinationDetector:
             'very', 'just', 'also', 'now', 'here', 'there', 'when',
             'where', 'why', 'how', 'all', 'each', 'every', 'both',
             'few', 'more', 'most', 'other', 'some', 'such', 'no',
-            'any', 'this', 'that', 'these', 'those', 'it', 'its'
+            'any', 'this', 'that', 'these', 'those', 'it', 'its',
+            'they', 'them', 'their', 'theirs', 'we', 'our', 'ours'
         }
 
         # Extract words

@@ -12,6 +12,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
+from src.monitoring.tracing import trace_span
+
 logger = logging.getLogger(__name__)
 
 
@@ -138,7 +140,10 @@ class ReasoningEngine:
         category, confidence = best_intent
 
         # Step 2: Extract entities from message
-        entities = self._extract_entities(message)
+        with trace_span("entity_extraction") as span:
+            entities = self._extract_entities(message)
+            span.set_attribute("telecom.entities", str(entities))
+            span.set_attribute("telecom.entity_count", sum(len(values) for values in entities.values()))
 
         # Step 3: Check conversation context
         if history and hasattr(history, 'messages') and history.messages:

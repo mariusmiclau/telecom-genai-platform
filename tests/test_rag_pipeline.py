@@ -1,12 +1,19 @@
 """Unit tests for RAG pipeline components."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.rag_pipeline.embeddings import EmbeddingService
-from src.rag_pipeline.ingest import DocumentIngester, ChunkingStrategy
-from src.rag_pipeline.retriever import HybridRetriever
+import pytest
+
 from src.rag_pipeline.chain import RAGChain
+from src.rag_pipeline.embeddings import EmbeddingService, EmbeddingSettings
+from src.rag_pipeline.ingest import (
+    ChunkingStrategy,
+    Document,
+    DocumentIngester,
+    DocumentType,
+    TicketChunker,
+)
+from src.rag_pipeline.retriever import HybridRetriever
 
 
 class TestEmbeddingGeneration:
@@ -15,8 +22,14 @@ class TestEmbeddingGeneration:
     @pytest.fixture
     def embedding_service(self, mock_openai_client):
         """Create an EmbeddingService with mocked client."""
-        with patch("src.rag_pipeline.embeddings.AsyncOpenAI", return_value=mock_openai_client):
-            service = EmbeddingService(provider="openai")
+        with patch(
+            "src.rag_pipeline.embeddings.AsyncOpenAI",
+            return_value=mock_openai_client,
+            create=True,
+        ):
+            service = EmbeddingService(
+                EmbeddingSettings(provider="openai", cache_enabled=False)
+            )
             service.client = mock_openai_client
             return service
 
@@ -166,10 +179,9 @@ class TestHybridSearchRanking:
     @pytest.fixture
     def retriever(self, mock_chromadb_collection):
         """Create a HybridRetriever with mocked collection."""
-        with patch("chromadb.HttpClient"):
-            retriever = HybridRetriever()
-            retriever.collection = mock_chromadb_collection
-            return retriever
+        retriever = HybridRetriever()
+        retriever.collection = mock_chromadb_collection
+        return retriever
 
     @pytest.mark.asyncio
     async def test_hybrid_search_ranking(self, retriever, sample_chunks):
@@ -243,7 +255,11 @@ class TestSourceAttribution:
     @pytest.fixture
     def rag_chain(self, mock_openai_client):
         """Create a RAGChain with mocked client."""
-        with patch("src.rag_pipeline.chain.AsyncOpenAI", return_value=mock_openai_client):
+        with patch(
+            "src.rag_pipeline.chain.AsyncOpenAI",
+            return_value=mock_openai_client,
+            create=True,
+        ):
             chain = RAGChain()
             chain.client = mock_openai_client
             return chain
@@ -302,7 +318,11 @@ class TestConfidenceScoring:
     @pytest.fixture
     def rag_chain(self, mock_openai_client):
         """Create a RAGChain with mocked client."""
-        with patch("src.rag_pipeline.chain.AsyncOpenAI", return_value=mock_openai_client):
+        with patch(
+            "src.rag_pipeline.chain.AsyncOpenAI",
+            return_value=mock_openai_client,
+            create=True,
+        ):
             chain = RAGChain()
             chain.client = mock_openai_client
             return chain
@@ -403,3 +423,30 @@ class TestTelecomDocumentFixtures:
 
         assert "ssh" in config_doc.lower()
         assert "password" in config_doc.lower()
+
+
+class TestTicketAwareChunking:
+    """Tests for field-preserving JSONL ticket chunks."""
+
+    def test_identity_is_repeated_across_ticket_chunk_groups(self):
+        document = Document(
+            content=(
+                '{"ticket_id":"INC42","summary":"Gx timeout",'
+                '"source":"servicenow/INC42.json","element_id":"PCRF-LON-01",'
+                '"interface":"Gx","root_cause":"stale route",'
+                '"resolution":"removed stale route"}'
+            ),
+            source_path="tickets.jsonl",
+            document_type=DocumentType.TICKET,
+        )
+
+        chunks = TicketChunker().chunk(document)
+
+        assert len(chunks) == 3
+        assert all(chunk.metadata["ticket_id"] == "INC42" for chunk in chunks)
+        assert all("ticket_id: INC42" in chunk.content for chunk in chunks)
+        assert {chunk.metadata["ticket_chunk_group"] for chunk in chunks} == {
+            "identity",
+            "incident",
+            "resolution",
+        }

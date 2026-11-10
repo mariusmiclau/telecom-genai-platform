@@ -1,7 +1,8 @@
 """Pydantic models for API request/response validation."""
 
-from typing import Optional
-from pydantic import BaseModel, Field
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatRequest(BaseModel):
@@ -27,6 +28,8 @@ class ChatRequest(BaseModel):
 class SourceReference(BaseModel):
     """Reference to a source document used in the response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     document: str = Field(..., description="Source document name")
     section: Optional[str] = Field(None, description="Specific section reference")
     relevance_score: float = Field(..., ge=0, le=1, description="Retrieval relevance score")
@@ -40,6 +43,9 @@ class ChatResponse(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Response confidence score")
     tools_used: list[str] = Field(default_factory=list, description="Tools called during processing")
     session_id: Optional[str] = Field(None, description="Session ID for follow-up")
+    trace_id: Optional[str] = Field(None, description="OpenTelemetry trace ID")
+    outcome: Literal["answered", "abstained", "escalated"] = "answered"
+    mode: Literal["demo", "live"] = "live"
 
 
 class IngestRequest(BaseModel):

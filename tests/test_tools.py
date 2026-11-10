@@ -2,11 +2,11 @@
 
 import pytest
 
+from src.tools.config import ConfigDiffTool, ConfigValidatorTool
+from src.tools.network import NetworkConfigTool, NetworkHealthTool
 from src.tools.registry import ToolResult
-from src.tools.network import NetworkHealthTool, NetworkConfigTool
-from src.tools.ticketing import TicketCreatorTool, TicketQueryTool
 from src.tools.sla import SLAMonitorTool
-from src.tools.config import ConfigValidatorTool, ConfigDiffTool
+from src.tools.ticketing import TicketCreatorTool, TicketQueryTool
 
 
 class TestNetworkHealthTool:
@@ -22,7 +22,7 @@ class TestNetworkHealthTool:
         assert hasattr(tool, "name")
         assert hasattr(tool, "description")
         assert hasattr(tool, "parameters")
-        assert tool.name == "network_health"
+        assert tool.name == "network_health_check"
 
     @pytest.mark.asyncio
     async def test_execute_returns_tool_result(self, tool):

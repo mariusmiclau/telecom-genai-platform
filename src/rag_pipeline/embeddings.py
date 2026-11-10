@@ -11,7 +11,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Self
+from typing import Any, Callable, Self, cast
 
 import redis.asyncio as redis
 from pydantic import Field
@@ -160,7 +160,7 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
                     provider=self.provider_name,
                 )
 
-            self._client = AsyncOpenAI(api_key=self.settings.openai_api_key)
+            self._client = AsyncOpenAI(api_key=self.settings.openai_api_key, timeout=20.0, max_retries=1)
         return self._client
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -270,7 +270,7 @@ class SentenceTransformersProvider(BaseEmbeddingProvider):
             None,
             lambda: model.encode(texts, convert_to_numpy=True).tolist(),
         )
-        return embeddings
+        return cast(list[list[float]], embeddings)
 
     async def embed_single(self, text: str) -> list[float]:
         result = await self.embed_texts([text])
@@ -330,7 +330,7 @@ class EmbeddingCache:
             key = self._cache_key(text, model)
             cached = await self._redis.get(key)
             if cached:
-                return json.loads(cached)
+                return cast(list[float], json.loads(cached))
         except Exception as e:
             logger.warning(f"Cache get failed: {e}")
         return None
@@ -440,7 +440,9 @@ class EmbeddingService:
 
     def _create_provider(self) -> BaseEmbeddingProvider:
         """Create the appropriate embedding provider."""
-        providers = {
+        providers: dict[
+            EmbeddingProvider, Callable[[EmbeddingSettings], BaseEmbeddingProvider]
+        ] = {
             EmbeddingProvider.OPENAI: OpenAIEmbeddingProvider,
             EmbeddingProvider.AZURE_OPENAI: AzureOpenAIEmbeddingProvider,
             EmbeddingProvider.SENTENCE_TRANSFORMERS: SentenceTransformersProvider,
@@ -619,7 +621,7 @@ class EmbeddingService:
         """Return the current provider name."""
         if self._provider:
             return self._provider.provider_name
-        return self.settings.provider.value
+        return str(self.settings.provider.value)
 
     @property
     def model_name(self) -> str:

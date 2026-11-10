@@ -2,11 +2,9 @@
 
 import asyncio
 import os
-from typing import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import AsyncClient
 
 # Sample telecom documents for testing
 SAMPLE_NETWORK_DOC = """
