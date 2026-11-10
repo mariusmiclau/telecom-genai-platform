@@ -1,5 +1,8 @@
 # Local delivery — 1.1.1
 
+Historical record. See [release 1.2 roadmap completion](roadmap-1.2.md) for the
+current local development scope, additional implementations and evidence.
+
 The current delivery target is local software. Infrastructure provisioning,
 registry configuration and production rollout are deferred by the owner.
 

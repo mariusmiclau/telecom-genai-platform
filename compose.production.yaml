@@ -17,6 +17,14 @@ services:
     image: ${APP_IMAGE:?Set APP_IMAGE to an immutable image digest}
     environment: &runtime_environment
       APP_MODE: live
+      AUTH_MODE: ${AUTH_MODE:-bearer}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
+      OIDC_TENANT_CLAIM: ${OIDC_TENANT_CLAIM:-tenant_id}
+      ENABLE_LOCAL_ACTIONS: ${ENABLE_LOCAL_ACTIONS:-false}
+      RETRIEVAL_CONFIGURATION: ${RETRIEVAL_CONFIGURATION:-C}
+      MAX_PENDING_INGESTION_JOBS: ${MAX_PENDING_INGESTION_JOBS:-20}
       APP_SECRETS_DIR: /run/secrets
       KNOWLEDGE_VERSION: ${KNOWLEDGE_VERSION:?Set KNOWLEDGE_VERSION}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}

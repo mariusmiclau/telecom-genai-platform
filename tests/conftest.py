@@ -336,3 +336,33 @@ async def async_mock_openai():
         )
         mock.return_value = client
         yield client
+
+
+@pytest.fixture
+async def isolated_store():
+    """A new synthetic database per test, never the developer's existing database."""
+    if not os.getenv("RUN_INTEGRATION"):
+        pytest.skip("Requires PostgreSQL integration profile")
+    import uuid
+
+    import psycopg2
+    from psycopg2 import sql
+
+    from src.agents.store import PostgresConversationStore
+
+    name = "roadmap_test_" + uuid.uuid4().hex
+    admin = psycopg2.connect("postgresql://genai:local-development-only@localhost:5432/telecom_genai")
+    admin.autocommit = True
+    with admin.cursor() as cursor:
+        cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    store = PostgresConversationStore("postgresql://genai:local-development-only@localhost:5432/" + name)
+    try:
+        await store.start()
+        yield store
+    finally:
+        await store.close()
+        # Only the exact nonce-named database created above is eligible for cleanup.
+        assert name.startswith("roadmap_test_") and len(name) == 45
+        with admin.cursor() as cursor:
+            cursor.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+        admin.close()

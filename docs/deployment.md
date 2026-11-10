@@ -1,6 +1,9 @@
-# Deployment runbook — release 1.1
+# Deployment runbook
 
-The supported application is a single-operator ticket assistant. Deployment is
+Bearer mode is a single-operator ticket assistant. Optional OIDC API identity,
+ACLs, durable jobs and guarded local action simulation are described in
+[the 1.2 completion record](roadmap-1.2.md); actual enterprise/provider acceptance
+has not been performed. Deployment is
 available on a Linux Docker host, or through Azure Container Apps and private
 PostgreSQL. It does not execute carrier network changes. Enterprise SSO,
 multi-tenant document permissions and operational adapters require a separate

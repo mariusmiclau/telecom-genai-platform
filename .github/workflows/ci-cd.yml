@@ -33,7 +33,7 @@ jobs:
       - name: Exercise real PostgreSQL publication and retrieval
         env:
           RUN_INTEGRATION: '1'
-        run: uv run pytest tests/test_release.py tests/test_deployment.py -q
+        run: uv run pytest tests/test_release.py tests/test_deployment.py tests/test_security_runtime.py tests/test_workflows.py -q
       - name: Build and start demo container
         run: docker compose up -d --build --wait demo
       - name: Verify packaged demo
@@ -61,6 +61,7 @@ jobs:
             coverage.xml
             /tmp/evaluation.json
             .release-check/deployment-acceptance.json
+            .release-check/production-evaluation.json
             .release-check/image-audit.json
       - name: Collect container diagnostics
         if: failure()

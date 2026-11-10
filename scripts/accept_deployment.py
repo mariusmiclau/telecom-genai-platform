@@ -13,6 +13,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from prometheus_client.parser import text_string_to_metric_families
@@ -50,7 +51,7 @@ def verify_trace_export(logs: str, trace_id: str):
 
 def verify_metrics_export(metrics: str):
     samples = [sample for family in text_string_to_metric_families(metrics) for sample in family.samples]
-    expected = {"answered": 2, "abstained": 1, "dependency_error": 1}
+    expected = {"answered": 2, "abstained": 1, "dependency_error": 1, "escalated": 1}
     for outcome, minimum in expected.items():
         count = sum(sample.value for sample in samples if sample.name == "genai_answer_outcomes_total"
                     and sample.labels.get("outcome") == outcome)
@@ -128,6 +129,19 @@ def accept(image: str, output: Path):
         assert request("/api/v1/sessions/" + unsupported["session_id"], method="DELETE")[0] == 204
         assert request("/api/v1/chat", {"message": "PROVIDER_UNAVAILABLE"})[0] == 503
         assert request("/api/v1/sessions/" + result["session_id"], method="DELETE")[0] == 204
+        escalated_status, escalated_body = request("/api/v1/chat", {"message": "Create a ticket"})
+        assert escalated_status == 200 and json.loads(escalated_body)["outcome"] == "escalated", escalated_body
+
+        def concurrent_query(_):
+            started = time.monotonic()
+            status, body = request("/api/v1/chat", query)
+            result = json.loads(body)
+            assert status == 200 and result["outcome"] == "answered", body
+            return result["session_id"], (time.monotonic() - started) * 1000
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            burst = list(executor.map(concurrent_query, range(8)))
+        for session, _ in burst:
+            assert request("/api/v1/sessions/" + session, method="DELETE")[0] == 204
         metrics = run("exec", "-T", "api", "python", "-c",
             "from pathlib import Path; from urllib.request import Request,urlopen; "
             "request=Request('http://localhost:8000/metrics', headers={'Authorization': 'Bearer '+Path('/run/secrets/api_token').read_text()}); "
@@ -138,14 +152,44 @@ def accept(image: str, output: Path):
             return run("exec", "-T", "postgres", *args, capture=True).stdout.strip()
         assert database("psql", "-U", "genai", "-d", "telecom_genai", "-Atc",
                         "SELECT count(*) FROM platform_messages") == "0"
+        questions = Path("evaluation/golden_questions.jsonl").resolve().as_posix()
+        evaluation = json.loads(run("run", "--rm", "-v", questions + ":/questions.jsonl:ro", "publisher",
+            "python", "-m", "src.evaluation.production", "--source", "/input/tickets.jsonl",
+            "--questions", "/questions.jsonl", "--prefix", project + "-eval", "--publish", "--answers",
+            "--fixture", "--output", "-", capture=True).stdout)
+        assert evaluation["backend"] == "runtime-postgresql" and evaluation["golden_questions"] == 50
+        assert len(evaluation["generated_answer_review"]) == 50
+        Path(".release-check/production-evaluation.json").write_text(json.dumps(evaluation, indent=2), encoding="utf-8")
+        job = json.loads(run("run", "--rm", "publisher", "python", "-m", "src.jobs", "submit",
+            "--source", "/input/tickets.jsonl", "--version", project + "-job", "--group", "noc", capture=True).stdout)
+        run("run", "--rm", "publisher", "python", "-m", "src.jobs", "worker", "--once", capture=True)
+        job_status = json.loads(run("run", "--rm", "publisher", "python", "-m", "src.jobs", "status", "--job", job["id"], capture=True).stdout)
+        assert job_status["state"] == "succeeded" and job_status["result"]["accepted_records"] == 50, job_status
+        # Exercise real container recreation, activation and rollback without
+        # deleting either accepted snapshot or downgrading identity enforcement.
+        for version in (project + "-eval-C", project):
+            environment["KNOWLEDGE_VERSION"] = version
+            run("up", "-d", "--wait", "api")
+            active_version = run("exec", "-T", "api", "python", "-c", "import os; print(os.environ['KNOWLEDGE_VERSION'])", capture=True).stdout.strip()
+            assert active_version == version
+            rollback_status, rollback_body = request("/api/v1/chat", query)
+            rollback_answer = json.loads(rollback_body)
+            assert rollback_status == 200 and "INC20260001" in rollback_answer["response"], rollback_body
+            assert request("/api/v1/sessions/" + rollback_answer["session_id"], method="DELETE")[0] == 204
+        expected_chunks = int(database("psql", "-U", "genai", "-d", "telecom_genai", "-Atc", "SELECT count(*) FROM knowledge_chunks"))
         database("pg_dump", "-U", "genai", "-d", "telecom_genai", "-Fc", "-f", "/tmp/acceptance.dump")
         database("createdb", "-U", "genai", "acceptance_restore")
         database("pg_restore", "-U", "genai", "-d", "acceptance_restore", "/tmp/acceptance.dump")
         assert database("psql", "-U", "genai", "-d", "acceptance_restore", "-Atc",
-                        "SELECT count(*) FROM knowledge_chunks") == "150"
+                        "SELECT count(*) FROM knowledge_chunks") == str(expected_chunks)
         evidence.update(tls_verified=True, unauthorized_rejected=True, live_rag_answer=True,
                         session_followup=True, provider_failure_sanitized=True, session_deletion=True,
-                        unsupported_answer_blocked=True, backup_restore=True, restored_chunks=150,
+                        unsupported_answer_blocked=True, backup_restore=True, restored_chunks=expected_chunks,
+                        explicit_escalation=True, concurrent_requests=8, concurrent_successes=len(burst),
+                        concurrent_p95_ms=round(max(elapsed for _, elapsed in burst), 2),
+                        configuration_rollback_verified=True,
+                        durable_ingestion_sdk_verified=True,
+                        production_recall_at_5={name: row["metrics"]["recall_at_5"] for name, row in evaluation["configurations"].items()},
                         exported_trace_stages=stages, trace_content_disabled=True, monitoring_verified=True, status="passed")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")

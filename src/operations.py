@@ -27,7 +27,8 @@ async def publish(source: Path, version: str):
         base_url=settings.openai_base_url, cache_enabled=False,
     )
     embeddings = EmbeddingService(embedding_settings)
-    retriever = PostgresTicketRetriever(store, embeddings, version, embedding_settings.model_name, embedding_settings.dimensions)
+    retriever = PostgresTicketRetriever(store, embeddings, version, embedding_settings.model_name, embedding_settings.dimensions,
+        configuration=settings.retrieval_configuration)
     try:
         await store.start()
         await retriever.start(require_data=False)
