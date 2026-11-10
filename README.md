@@ -1,262 +1,147 @@
 # Telecom GenAI Platform
 
-An enterprise-grade GenAI integration platform for telecom automation, featuring RAG pipelines, agentic workflows, tool-calling, and API integration with OSS/BSS systems.
+Release 1.0 is a runnable telecom knowledge assistant and LLMOps case study.
+It includes a credential-free local demo, a protected live RAG endpoint,
+versioned datasets, reproducible retrieval evaluation, request tracing, and
+tests against real PostgreSQL transactions and retrieval.
 
-Built to demonstrate production-ready patterns for integrating LLM capabilities into telecom operations workflows.
+## Run the delivered demo
 
-## Architecture
+```sh
+docker compose up -d --build demo
+```
+
+Open [the demo](http://127.0.0.1:8000/demo) or [interactive documentation](http://127.0.0.1:8000/docs).
+No `.env` or external model account is required. The container runs as a
+non-root user with a read-only filesystem and binds to localhost.
+
+The demo retrieves historical facts from 50 synthetic tickets and extracts
+their summary, root cause, resolution, and runbook. It does not read golden
+reference answers or call an LLM. Unknown questions can return an abstention.
+Scores express retrieval heuristics, not calibrated probabilities.
+
+For native development, install [uv](https://docs.astral.sh/uv/), then:
+
+```sh
+uv sync --locked --extra dev --python 3.11
+uv run uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+```
+
+## Scope and operating modes
+
+| Mode | Purpose | Dependencies |
+|---|---|---|
+| `demo` (default) | Extract facts from synthetic historical incidents | Packaged dataset only |
+| `live` | Generate cited answers from an operator-published PostgreSQL snapshot | PostgreSQL, configured OpenAI key |
+
+Live mode is a single trusted operator deployment. Reader and admin bearer
+credentials are separate. User identity, tenant isolation, enterprise SSO,
+and real OSS/BSS actions require organization-specific integration; they are
+not claimed as implemented. Simulators are excluded from live orchestration.
+The Chroma adapter is an optional legacy extra excluded from the default install due to known unpatched advisories. The original Azure Terraform and worker/simulator Dockerfiles are retained
+as historical scaffolding, not part of the verified release deployment.
+
+See [the operating runbook](docs/operations.md) for live setup, index
+publication, backup, recovery, and the release acceptance checklist.
+
+## Request path
 
 ```mermaid
-graph TB
-    subgraph "Client Layer"
-        API[REST API - FastAPI]
-        WS[WebSocket - Real-time]
-    end
-
-    subgraph "GenAI Core"
-        AGENT[Agent Orchestrator]
-        RAG[RAG Pipeline]
-        TOOLS[Tool Registry]
-        GUARD[Guardrails Engine]
-    end
-
-    subgraph "Data Layer"
-        VS[Vector Store - ChromaDB]
-        PG[PostgreSQL - Conversation History]
-        REDIS[Redis - Cache & Sessions]
-    end
-
-    subgraph "Telecom Integration"
-        OSS[OSS/BSS Adapter]
-        NMS[Network Management API]
-        TICKET[Ticketing System API]
-        KB[Knowledge Base Ingestion]
-    end
-
-    subgraph "Observability"
-        PROM[Prometheus Metrics]
-        GRAF[Grafana Dashboards]
-        LOG[Structured Logging]
-        HALL[Hallucination Monitor]
-    end
-
-    API --> AGENT
-    WS --> AGENT
-    AGENT --> RAG
-    AGENT --> TOOLS
-    AGENT --> GUARD
-    RAG --> VS
-    RAG --> PG
-    TOOLS --> OSS
-    TOOLS --> NMS
-    TOOLS --> TICKET
-    KB --> VS
-    AGENT --> PROM
-    GUARD --> HALL
-    HALL --> LOG
-    PROM --> GRAF
+flowchart LR
+    HTTP["Authenticated live request"] --> LIMITS["Quota and deadline"]
+    LIMITS --> RETRIEVE["Vector + BM25 retrieval"]
+    RETRIEVE --> RANK["Rank fusion + field reranking"]
+    RANK --> LLM["Cited answer generation"]
+    LLM --> POLICY["Grounding + citation checks"]
+    POLICY --> ANSWER["Answer or abstention"]
+    ANSWER --> REDACT["PII filtering"]
 ```
 
-## Features
+Dependencies belong to the application lifespan, with startup validation,
+dependency-aware readiness and shutdown cleanup. Conversation turns use a
+bounded PostgreSQL pool, run blocking work off the event loop, save complete
+turns transactionally, and select recent history in chronological order.
+Live tool requests escalate without executing simulated operations.
 
-### RAG Pipeline
-- Document ingestion from structured (CSV, JSON, XML) and unstructured (PDF, docs) telecom data
-- Chunking strategies optimized for technical documentation (network configs, runbooks, SLA documents)
-- Vector embeddings with configurable models (OpenAI, local alternatives)
-- Hybrid search: semantic + keyword for technical terminology
-- Source attribution and confidence scoring
+## Measured retrieval experiment
 
-### Agentic Workflows
-- Multi-step reasoning with tool-calling for network diagnostics
-- Function execution against simulated OSS/BSS APIs
-- Conversation memory with PostgreSQL persistence
-- Configurable reasoning chains with retry logic
+The golden set contains 50 synthetic questions with expected ticket IDs,
+sources and reference answers.
 
-### Telecom-Specific Tools
-- **Network Health Check**: Query network element status via REST API
-- **Ticket Creator**: Auto-generate incident tickets from AI analysis
-- **SLA Monitor**: Check SLA compliance and generate alerts
-- **Config Validator**: Validate network configuration changes against policies
-- **Capacity Planner**: Analyze traffic patterns and recommend scaling
+| Configuration | Recall@1 | Recall@5 | Recall@10 | MRR |
+|---|---:|---:|---:|---:|
+| A: recursive chunks + hashing vector | 64% | 78% | 80% | 0.690 |
+| B: ticket-aware chunks + hashing vector + BM25 | 74% | 86% | 96% | 0.796 |
+| C: B + deterministic field reranker | 100% | 100% | 100% | 1.000 |
 
-### Guardrails & Safety
-- Input validation and prompt injection detection
-- Output filtering for PII and sensitive network data
-- Hallucination detection using source grounding scores
-- Response confidence thresholds with human-in-the-loop escalation
-- Audit logging for compliance
+These are local synthetic experiment results. The vector baseline uses TF-IDF
+feature hashing and deliberately excludes certain identifiers and acronyms.
+Changing both chunking and retrieval does not isolate either change's causal
+effect. The result does not establish neural embedding quality, generated
+answer accuracy, or performance on real tickets. Live retrieval shares BM25
+and field-ranking code but uses the configured embedding provider. Live
+lexical retrieval is bounded to 10,000 chunks; larger collections require a
+dedicated search backend. Full methodology: [evaluation](docs/evaluation.md).
 
-### Monitoring & Observability
-- Prometheus metrics: latency, token usage, error rates, hallucination scores
-- Grafana dashboards for real-time AI system health
-- Structured JSON logging with correlation IDs
-- Model quality tracking over time
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|-----------|
-| API Framework | FastAPI (Python) |
-| LLM Integration | LangChain / LiteLLM |
-| Vector Database | ChromaDB |
-| Database | PostgreSQL |
-| Cache | Redis |
-| Containerization | Docker + Docker Compose |
-| Orchestration | Kubernetes (Helm charts) |
-| IaC | Terraform (Azure) |
-| CI/CD | GitHub Actions |
-| Monitoring | Prometheus + Grafana |
-| Testing | pytest + httpx |
-
-## Quick Start
-
-### Prerequisites
-- Docker and Docker Compose
-- Python 3.11+
-- OpenAI API key (or compatible LLM endpoint)
-
-### Run locally
-```bash
-# Clone the repository
-git clone https://github.com/mariusmiclau/telecom-genai-platform.git
-cd telecom-genai-platform
-
-# Copy environment config
-cp .env.example .env
-# Edit .env with your API keys
-
-# Start all services
-docker-compose up -d
-
-# Ingest sample telecom documentation
-python src/rag_pipeline/ingest.py --source docs/sample_data/
-
-# API available at http://localhost:8000
-# Grafana dashboard at http://localhost:3000
+```sh
+uv run python -m src.evaluation.cli --output reports/evaluation/latest.json --compare-to reports/evaluation/baseline.json
 ```
 
-### Run tests
-```bash
-pytest tests/ -v
+## Dataset lineage
+
+```text
+tickets-v1.0
+  -> tickets-v1.1-cleaned
+  -> tickets-v1.2-pii-redacted
+  -> tickets-v2.0-ticket-aware-chunking
 ```
 
-## Project Structure
+Every version includes a manifest with source snapshot, parent, hash, cleaning
+rules, chunking, embedding model/dimensions, counts, timestamp, and evaluation
+status. See [dataset versioning](docs/dataset-versioning.md).
 
-```
-telecom-genai-platform/
-├── src/
-│   ├── api/              # FastAPI endpoints
-│   │   ├── main.py        # Application entry point
-│   │   ├── routes.py      # API routes
-│   │   └── models.py      # Pydantic request/response models
-│   ├── rag_pipeline/      # RAG implementation
-│   │   ├── ingest.py      # Document ingestion and chunking
-│   │   ├── embeddings.py  # Embedding generation
-│   │   ├── retriever.py   # Hybrid search retriever
-│   │   └── chain.py       # RAG chain with source attribution
-│   ├── agents/            # Agentic workflows
-│   │   ├── orchestrator.py # Main agent orchestrator
-│   │   ├── reasoning.py   # Multi-step reasoning engine
-│   │   └── memory.py      # Conversation memory management
-│   ├── tools/             # Telecom-specific tool implementations
-│   │   ├── registry.py    # Tool registration and discovery
-│   │   ├── network.py     # Network health check tools
-│   │   ├── ticketing.py   # Ticket creation tools
-│   │   ├── sla.py         # SLA monitoring tools
-│   │   └── config.py      # Config validation tools
-│   ├── guardrails/        # Safety and compliance
-│   │   ├── input_filter.py    # Prompt injection detection
-│   │   ├── output_filter.py   # PII and data filtering
-│   │   ├── hallucination.py   # Hallucination detection
-│   │   └── audit.py           # Audit logging
-│   └── monitoring/        # Observability
-│       ├── metrics.py     # Prometheus metrics
-│       └── logging.py     # Structured logging
-├── infrastructure/
-│   ├── docker/            # Dockerfiles
-│   ├── k8s/               # Kubernetes manifests and Helm charts
-│   └── terraform/         # Azure infrastructure
-├── tests/                 # Test suite
-├── docs/
-│   ├── sample_data/       # Sample telecom documents for RAG
-│   └── architecture.md    # Detailed architecture decisions
-├── docker-compose.yml
-├── .env.example
-├── .github/workflows/     # CI/CD pipelines
-├── pyproject.toml
-└── README.md
+## Tracing and verification
+
+OpenTelemetry records entity extraction, vector search, keyword search, fusion,
+reranking, prompt construction, model execution, grounding and final response.
+Query content capture is **off by default**. The demo explicitly marks the LLM
+stage as skipped. See [tracing](docs/tracing.md).
+
+```sh
+uv run ruff check src tests scripts
+uv run mypy src --ignore-missing-imports
+uv run pytest -q
+docker compose --profile integration up -d --wait postgres redis
+# Set RUN_INTEGRATION=1 in your shell, then:
+uv run pytest tests/test_release.py -q
+uv run python scripts/verify_release.py
+uv build
 ```
 
-## Design Decisions
+CI verifies lint, types, tests, golden retrieval, Python distributions, real
+PostgreSQL publication and retrieval, and an HTTP smoke test of the Docker demo.
+It uploads release artifacts without deploying or publishing them.
 
-### Why RAG over Fine-Tuning?
-For telecom operations, documentation changes frequently (network configs, runbooks, SLA terms).
-RAG allows real-time updates without retraining. Fine-tuning would create stale models that
-drift from current network state.
+## Endpoints
 
-### Why Hybrid Search?
-Telecom documentation contains highly specific technical terms (PCRF, HLR, SMSC, VMS) that
-pure semantic search misses. Hybrid search combines BM25 keyword matching with vector
-similarity to handle both natural language queries and exact technical lookups.
+| Endpoint | Contract |
+|---|---|
+| `GET /health` | Process liveness |
+| `GET /ready` | Dependency readiness; 503 when unavailable |
+| `GET /demo` | Local demo interface; unavailable in live mode |
+| `POST /api/v1/demo/chat` | Extractive synthetic ticket answers |
+| `POST /api/v1/chat` | Live RAG; reader credential required |
+| `GET /metrics` | Prometheus; protected in live mode |
+| `POST /api/v1/ingest*` | HTTP ingestion disabled; operator CLI required |
 
-### Why Guardrails First?
-In telecom, an AI hallucinating a network configuration change could cause outages affecting
-thousands of users. Every response is grounded against source documents with confidence
-scoring. Below-threshold responses trigger human-in-the-loop escalation rather than
-autonomous action.
+## Interview walkthrough
 
-### Why Tool-Calling Architecture?
-Network operations require real-time data. The agent doesn't guess network status from
-training data. Instead, it calls live APIs (simulated in this demo) to get current state,
-then reasons about the results. This pattern ensures responses reflect actual network
-conditions.
+I built a telecom knowledge assistant around inconsistent tickets, runbooks,
+SLA documents and network configurations. Document-specific chunking preserves
+incident identity, while vector and exact-term retrieval handle different
+types of questions. I introduced a synthetic golden dataset, measured ranking
+experiments, version manifests and request traces, then added explicit runtime
+lifecycle, admission controls and answer abstention. The next external
+validation is an approved real-ticket pilot using the deployed model path.
 
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/chat` | Send a message to the AI agent |
-| POST | `/api/v1/ingest` | Ingest documents into RAG pipeline |
-| GET | `/api/v1/health` | System health check |
-| GET | `/api/v1/metrics` | Prometheus metrics endpoint |
-| WS | `/api/v1/ws/chat` | WebSocket for streaming responses |
-
-## Sample Interactions
-
-```
-User: "What's the current status of the core network in Region A?"
-
-Agent: [Calls network_health_check tool for Region A]
-       [Retrieves relevant SLA thresholds from knowledge base]
-       [Compares current metrics against SLA targets]
-
-Response: "Region A core network is operational. Current availability
-is 99.97%, which is above the SLA target of 99.95%. However, I've
-detected elevated latency on 2 of 12 nodes (Node-7: 45ms, Node-11: 52ms)
-against a baseline of 20-25ms. This could indicate early congestion.
-Shall I create a proactive incident ticket?"
-
-Sources: [SLA-Document-v3.2, Section 4.1], [Network-Runbook, Chapter 7]
-Confidence: 0.94
-```
-
-## Monitoring Dashboard
-
-The Grafana dashboard tracks:
-- **Request latency** (p50, p95, p99)
-- **Token usage** per request and cumulative
-- **Hallucination score** distribution
-- **Tool call success/failure** rates
-- **RAG retrieval relevance** scores
-- **Active conversations** and session duration
-
-## License
-
-MIT
-
-## Author
-
-**Marius Miclau** - Integration Architect | Azure Cloud & API Platform Specialist
-- 17+ years enterprise integration across telecom, energy, and logistics
-- [LinkedIn](https://linkedin.com/in/mariusmiclau)
-- [X/Twitter](https://x.com/MiclauMarius)
+MIT license. Author: Marius Miclau.

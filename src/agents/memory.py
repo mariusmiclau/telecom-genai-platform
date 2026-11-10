@@ -282,7 +282,7 @@ class ConversationMemory:
         conn = self._get_connection()
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) as count FROM conversations")
-            return cur.fetchone()["count"]
+            return int(cur.fetchone()["count"])
 
     def close(self):
         """Close database connection."""

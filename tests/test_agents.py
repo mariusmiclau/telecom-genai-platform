@@ -1,10 +1,11 @@
 """Agent behavior tests."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.agents.orchestrator import AgentOrchestrator
+import pytest
+
 from src.agents.memory import ConversationMemory
+from src.agents.orchestrator import AgentOrchestrator
 from src.agents.reasoning import ReasoningEngine
 
 
@@ -14,7 +15,7 @@ class TestToolSelectionNetworkQuery:
     @pytest.fixture
     def orchestrator(self):
         """Create an AgentOrchestrator instance."""
-        with patch("src.agents.orchestrator.AsyncOpenAI"):
+        with patch("src.agents.orchestrator.AsyncOpenAI", create=True):
             return AgentOrchestrator()
 
     @pytest.mark.asyncio
@@ -83,7 +84,7 @@ class TestToolSelectionTicketCreation:
     @pytest.fixture
     def orchestrator(self):
         """Create an AgentOrchestrator instance."""
-        with patch("src.agents.orchestrator.AsyncOpenAI"):
+        with patch("src.agents.orchestrator.AsyncOpenAI", create=True):
             return AgentOrchestrator()
 
     @pytest.mark.asyncio
@@ -197,7 +198,11 @@ class TestReasoningChainCompletion:
     @pytest.fixture
     def reasoning_engine(self, mock_openai_client):
         """Create a ReasoningEngine with mocked client."""
-        with patch("src.agents.reasoning.AsyncOpenAI", return_value=mock_openai_client):
+        with patch(
+            "src.agents.reasoning.AsyncOpenAI",
+            return_value=mock_openai_client,
+            create=True,
+        ):
             engine = ReasoningEngine()
             engine.client = mock_openai_client
             return engine
@@ -255,7 +260,7 @@ class TestMaxIterationsLimit:
     @pytest.fixture
     def orchestrator(self):
         """Create an AgentOrchestrator instance."""
-        with patch("src.agents.orchestrator.AsyncOpenAI"):
+        with patch("src.agents.orchestrator.AsyncOpenAI", create=True):
             orch = AgentOrchestrator()
             orch.max_iterations = 5
             return orch
@@ -304,7 +309,7 @@ class TestHumanEscalationTrigger:
     @pytest.fixture
     def orchestrator(self):
         """Create an AgentOrchestrator instance."""
-        with patch("src.agents.orchestrator.AsyncOpenAI"):
+        with patch("src.agents.orchestrator.AsyncOpenAI", create=True):
             return AgentOrchestrator()
 
     @pytest.mark.asyncio
@@ -392,7 +397,11 @@ class TestIntentClassification:
     @pytest.fixture
     def reasoning_engine(self, mock_openai_client):
         """Create a ReasoningEngine instance."""
-        with patch("src.agents.reasoning.AsyncOpenAI", return_value=mock_openai_client):
+        with patch(
+            "src.agents.reasoning.AsyncOpenAI",
+            return_value=mock_openai_client,
+            create=True,
+        ):
             return ReasoningEngine()
 
     @pytest.mark.asyncio

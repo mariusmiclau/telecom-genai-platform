@@ -6,6 +6,7 @@ Critical for telecom operations where hallucinated configs could cause outages.
 
 import logging
 import os
+import re
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -114,7 +115,7 @@ class HallucinationDetector:
         - SLA compliance statements
         """
         claims = []
-        sentences = response.split(".")
+        sentences = re.split(r"(?<=[.!?])\s+|\n+", response)
 
         for sentence in sentences:
             sentence = sentence.strip()
@@ -169,7 +170,8 @@ class HallucinationDetector:
         Uses keyword overlap as a baseline heuristic.
         In production, this would use an NLI model for semantic entailment.
         """
-        claim_tokens = set(claim.lower().split())
+        citation_free = re.sub(r"\[(?:Source\s*)?\d+\]", "", claim)
+        claim_tokens = set(re.findall(r"\w+(?:\.\d+)?", citation_free.lower()))
         # Remove common stop words
         stop_words = {
             "the", "a", "an", "is", "are", "was", "were", "has", "have",
@@ -182,11 +184,17 @@ class HallucinationDetector:
         }
         claim_keywords = claim_tokens - stop_words
 
+        # A shared vocabulary must never excuse an invented numerical value.
+        numbers = set(re.findall(r"(?<!\w)[+-]?\d+(?:\.\d+)?%?", citation_free))
+        evidence_numbers = set(re.findall(r"(?<!\w)[+-]?\d+(?:\.\d+)?%?", " ".join(evidence)))
+        if not numbers.issubset(evidence_numbers):
+            return False
+
         if not claim_keywords:
             return True  # No substantive keywords to check
 
         for evidence_text in evidence:
-            evidence_tokens = set(evidence_text.lower().split())
+            evidence_tokens = set(re.findall(r"\w+(?:\.\d+)?", evidence_text.lower()))
             overlap = claim_keywords & evidence_tokens
             overlap_ratio = len(overlap) / len(claim_keywords)
 

@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.guardrails.input_filter import InputFilter, ValidationResult
-from src.guardrails.output_filter import OutputFilter, FilteredResponse
+from src.guardrails.input_filter import InputFilter
+from src.guardrails.output_filter import OutputFilter
 
 
 class TestInputFilter:

@@ -3,9 +3,9 @@
 import pytest
 
 from src.rag_pipeline.hallucination import (
+    Claim,
     HallucinationDetector,
     HallucinationResult,
-    Claim,
 )
 
 

@@ -11,7 +11,7 @@ import logging
 import random
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any
 
 from src.tools.registry import BaseTool, ToolResult
 
@@ -75,6 +75,7 @@ class NetworkHealthTool(BaseTool):
 
         topology = NETWORK_TOPOLOGY[region]
 
+        data: dict[str, Any]
         if element_id:
             # Query specific element
             status = self._get_element_status(element_id, region)
@@ -118,8 +119,8 @@ class NetworkHealthTool(BaseTool):
         if is_down:
             status = "down"
             availability = round(random.uniform(0, 50), 2)
-            latency = 0
-            throughput = 0
+            latency = 0.0
+            throughput = 0.0
             error_rate = round(random.uniform(50, 100), 2)
         elif is_degraded:
             status = "degraded"

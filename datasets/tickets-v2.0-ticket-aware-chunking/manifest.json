@@ -1,0 +1,67 @@
+{
+  "chunking_configuration": {
+    "identity_fields": [
+      "ticket_id",
+      "severity",
+      "region",
+      "element_id",
+      "interface",
+      "service",
+      "runbook_id"
+    ],
+    "incident_fields": [
+      "summary",
+      "description",
+      "symptoms"
+    ],
+    "resolution_fields": [
+      "root_cause",
+      "resolution"
+    ],
+    "strategy": "ticket-aware"
+  },
+  "cleaning_rules": [
+    "inherit tickets-v1.2-pii-redacted rules"
+  ],
+  "creation_timestamp": "2026-08-05T00:00:00Z",
+  "dataset_version": "tickets-v2.0-ticket-aware-chunking",
+  "embedding_dimensions": 384,
+  "embedding_model": "telecom-hashing-embedding-v1",
+  "evaluation_results": {
+    "configurations": {
+      "B_ticket_aware_hybrid": {
+        "evidence_coverage_at_5": 0.8072,
+        "latency_p50_ms": 4.9247,
+        "latency_p95_ms": 8.9795,
+        "ndcg_at_5": 0.8019,
+        "questions": 50,
+        "recall_at_1": 0.74,
+        "recall_at_10": 0.96,
+        "recall_at_5": 0.86,
+        "reciprocal_rank": 0.7957,
+        "source_recall_at_5": 0.86
+      },
+      "C_ticket_aware_hybrid_reranker": {
+        "evidence_coverage_at_5": 0.8999,
+        "latency_p50_ms": 12.4082,
+        "latency_p95_ms": 18.3891,
+        "ndcg_at_5": 1.0,
+        "questions": 50,
+        "recall_at_1": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_5": 1.0,
+        "reciprocal_rank": 1.0,
+        "source_recall_at_5": 1.0
+      }
+    },
+    "report": "reports/evaluation/baseline.json",
+    "status": "measured"
+  },
+  "number_of_documents": 50,
+  "number_of_rejected_records": 0,
+  "parent_version": "tickets-v1.2-pii-redacted",
+  "snapshot_file": "datasets/tickets-v2.0-ticket-aware-chunking/tickets.jsonl",
+  "snapshot_sha256": "4fe9b2b3d6e13ef509238676e0dd143b7268b360e6d67d935ec9458685a7ab36",
+  "source_snapshot": "synthetic-servicenow-export-2026-07-31",
+  "synthetic_data": true
+}

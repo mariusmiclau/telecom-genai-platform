@@ -8,8 +8,8 @@ compatible schema for tool definitions.
 import logging
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Optional
 
 from src.monitoring.metrics import TOOL_CALLS, TOOL_LATENCY
 

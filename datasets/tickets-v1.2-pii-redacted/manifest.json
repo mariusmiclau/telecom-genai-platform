@@ -1,0 +1,28 @@
+{
+  "chunking_configuration": {
+    "chunk_overlap": 40,
+    "chunk_size": 240,
+    "strategy": "recursive"
+  },
+  "cleaning_rules": [
+    "inherit tickets-v1.1-cleaned rules",
+    "redact reporter email",
+    "redact contact phone",
+    "redact management IP"
+  ],
+  "creation_timestamp": "2026-08-05T00:00:00Z",
+  "dataset_version": "tickets-v1.2-pii-redacted",
+  "embedding_dimensions": 384,
+  "embedding_model": "telecom-hashing-embedding-v1",
+  "evaluation_results": {
+    "report": "reports/evaluation/baseline.json",
+    "status": "not_evaluated"
+  },
+  "number_of_documents": 50,
+  "number_of_rejected_records": 0,
+  "parent_version": "tickets-v1.1-cleaned",
+  "snapshot_file": "datasets/tickets-v1.2-pii-redacted/tickets.jsonl",
+  "snapshot_sha256": "bebe3c990966904358415022b7b66f26fcf33bcb8a424001aa75e48f38e3a70e",
+  "source_snapshot": "synthetic-servicenow-export-2026-07-31",
+  "synthetic_data": true
+}

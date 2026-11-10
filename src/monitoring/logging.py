@@ -230,6 +230,7 @@ def setup_logging(
     root_logger.handlers.clear()
 
     # Create formatter based on output type
+    formatter: logging.Formatter
     if json_output:
         formatter = JSONFormatter()
     else:

@@ -7,7 +7,6 @@ to structured JSON for compliance and debugging.
 import json
 import logging
 import os
-import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -88,7 +87,8 @@ class AuditLogger:
             max_file_size_mb: Maximum file size before rotation
             also_log_to_logger: Also send audit entries to Python logger
         """
-        self.log_dir = Path(log_dir or os.getenv("AUDIT_LOG_DIR", "./logs/audit"))
+        log_dir_value = log_dir or os.getenv("AUDIT_LOG_DIR") or "./logs/audit"
+        self.log_dir = Path(log_dir_value)
         self.log_file = log_file
         self.max_file_size_bytes = max_file_size_mb * 1024 * 1024
         self.also_log_to_logger = also_log_to_logger
@@ -303,7 +303,7 @@ class AuditLogger:
             self.log_path.rename(rotated_path)
             logger.info(f"Rotated audit log to {rotated_name}")
 
-    def get_session_history(self, session_id: str) -> list[AuditEntry]:
+    def get_session_history(self, session_id: str) -> list[dict[str, Any]]:
         """Retrieve all audit entries for a session.
 
         Args:
@@ -312,7 +312,7 @@ class AuditLogger:
         Returns:
             List of audit entries for the session
         """
-        entries = []
+        entries: list[dict[str, Any]] = []
         if not self.log_path.exists():
             return entries
 

@@ -5,6 +5,8 @@ dist/
 build/
 .env
 .venv/
+.venv-release/
+.release-check/
 venv/
 *.db
 data/chroma/

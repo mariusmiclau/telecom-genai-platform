@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Telecom GenAI retrieval and tracing demo">
+  <title>Telecom GenAI | Operations demo</title>
+  <link rel="stylesheet" href="/static/demo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/demo" aria-label="Telecom GenAI demo home">
+      <span class="brand-mark" aria-hidden="true">TG</span>
+      <span>Telecom GenAI</span>
+    </a>
+    <nav aria-label="Demo links">
+      <a href="/docs">API</a>
+      <a href="http://localhost:16686" target="_blank" rel="noreferrer">Traces</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">NETWORK OPERATIONS ASSISTANT</p>
+        <h1 id="page-title">Ask the evidence, not the model.</h1>
+        <p class="lede">Ticket-aware retrieval, exact telecom terms, source grounding, and a trace for every answer.</p>
+        <p class="mode-note">Offline demo: extracts historical facts from 50 synthetic tickets. No live network access or LLM generation. Benchmark figures are Recall@5 on this synthetic set.</p>
+      </div>
+      <dl class="benchmark" aria-label="Measured retrieval benchmark">
+        <div><dt>Vector</dt><dd>78%</dd></div>
+        <div><dt>Hybrid</dt><dd>86%</dd></div>
+        <div><dt>Reranked</dt><dd>100%</dd></div>
+        <div><dt>Golden set</dt><dd>50</dd></div>
+      </dl>
+    </section>
+
+    <section class="workspace" aria-label="Operations assistant workspace">
+      <div class="query-panel">
+        <form id="query-form">
+          <label for="query">Operations question</label>
+          <textarea id="query" name="query" rows="5" required maxlength="4000" aria-describedby="query-help">Which incident fixed DIAMETER_TOO_BUSY on PCRF-LON-01?</textarea>
+          <p id="query-help" class="helper">Ask about a ticket, network element, interface, SLA, symptom, or remediation.</p>
+          <div class="form-actions">
+            <button id="submit-button" type="submit">Run grounded query</button>
+            <span class="key-hint">Ctrl + Enter</span>
+          </div>
+        </form>
+
+        <div class="examples" aria-label="Example questions">
+          <button type="button" data-query="Show the neighbour 172.20.14.2 incident on xe-0/0/7.">BGP neighbour</button>
+          <button type="button" data-query="Which 5G AMF case rejected a newly launched TAC?">5G registration</button>
+          <button type="button" data-query="What ticket prevented answers from repeating MSISDNs and engineer emails?">PII guardrail</button>
+        </div>
+
+        <section class="answer" aria-labelledby="answer-title">
+          <div class="answer-header">
+            <h2 id="answer-title">Grounded response</h2>
+            <span id="confidence" class="confidence" hidden></span>
+          </div>
+          <div id="answer-state" class="empty-state" aria-live="polite">
+            Run a query to see the answer, confidence, tools, and source evidence.
+          </div>
+          <div id="answer-content" hidden>
+            <p id="answer-text"></p>
+            <h3>Sources</h3>
+            <ol id="source-list"></ol>
+          </div>
+        </section>
+      </div>
+
+      <aside class="trace-panel" aria-labelledby="trace-title">
+        <div class="trace-heading">
+          <div>
+            <p class="panel-kicker">REQUEST TRACE</p>
+            <h2 id="trace-title">Pipeline stages</h2>
+          </div>
+          <span id="trace-status" class="trace-status">Offline ready</span>
+        </div>
+        <ol class="trace-list">
+          <li>Query</li>
+          <li>Entity extraction</li>
+          <li>Vector retrieval</li>
+          <li>Keyword retrieval</li>
+          <li>Rank fusion</li>
+          <li>Reranker</li>
+          <li>Prompt construction</li>
+          <li>Answer extraction (LLM skipped)</li>
+          <li>Grounding check</li>
+          <li>Final response</li>
+        </ol>
+        <div id="trace-result" class="trace-result">
+          <p>Start the local Jaeger service to inspect span attributes and timings.</p>
+          <a id="trace-link" href="http://localhost:16686" target="_blank" rel="noreferrer">Open Jaeger</a>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="/static/demo.js" defer></script>
+</body>
+</html>

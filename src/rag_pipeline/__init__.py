@@ -1,9 +1,10 @@
 """RAG Pipeline module for document ingestion, retrieval, and generation."""
 
-from src.rag_pipeline.embeddings import EmbeddingService, EmbeddingSettings, EmbeddingError
-from src.rag_pipeline.retriever import HybridRetriever, RetrievedDocument, RetrievalResult
-from src.rag_pipeline.chain import RAGChain, GeneratedResponse, SourceAttribution
-from src.rag_pipeline.hallucination import HallucinationDetector, HallucinationResult, Claim
+from src.rag_pipeline.chain import GeneratedResponse, RAGChain, SourceAttribution
+from src.rag_pipeline.embeddings import EmbeddingError, EmbeddingService, EmbeddingSettings
+from src.rag_pipeline.hallucination import Claim, HallucinationDetector, HallucinationResult
+from src.rag_pipeline.ingest import TicketChunker
+from src.rag_pipeline.retriever import HybridRetriever, RetrievalResult, RetrievedDocument
 
 __all__ = [
     # Embeddings
@@ -22,4 +23,5 @@ __all__ = [
     "HallucinationDetector",
     "HallucinationResult",
     "Claim",
+    "TicketChunker",
 ]

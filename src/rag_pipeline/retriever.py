@@ -6,15 +6,14 @@ Implements a fusion retrieval strategy for telecom knowledge base:
 3. Reciprocal Rank Fusion to combine results
 """
 
+import asyncio
 import logging
 import os
 import re
 from dataclasses import dataclass, field
 from typing import Optional
 
-import chromadb
-from chromadb.config import Settings
-
+from src.monitoring.tracing import content_attributes, trace_span
 from src.rag_pipeline.embeddings import EmbeddingService, EmbeddingSettings
 
 logger = logging.getLogger(__name__)
@@ -81,18 +80,20 @@ class HybridRetriever:
 
         self._chroma_client = None
         self._collection = None
-        self._embedding_service = None
+        self._embedding_service: EmbeddingService | None = None
 
         # RRF parameter (typically 60)
         self.rrf_k = 60
 
         # Weights for combining methods
-        self.semantic_weight = 0.7
-        self.keyword_weight = 0.3
+        self.semantic_weight = 0.65
+        self.keyword_weight = 0.35
 
     def _get_chroma_client(self):
         """Get or create ChromaDB client."""
         if self._chroma_client is None:
+            import chromadb
+            from chromadb.config import Settings
             self._chroma_client = chromadb.HttpClient(
                 host=self.chroma_host,
                 port=self.chroma_port,
@@ -123,6 +124,7 @@ class HybridRetriever:
         top_k: int = 5,
         filters: Optional[dict] = None,
         semantic_only: bool = False,
+        rerank: bool = True,
     ) -> RetrievalResult:
         """Perform hybrid search over the knowledge base.
 
@@ -141,33 +143,45 @@ class HybridRetriever:
         # Build ChromaDB where filter
         where_filter = self._build_where_filter(filters)
 
-        # Get results from both methods
-        semantic_docs = await self._semantic_search(
-            query=query,
-            top_k=top_k * 2,  # Get more for fusion
-            where=where_filter,
-        )
+        # Get results from both methods. Each stage is a child span in the
+        # end-to-end request trace.
+        with trace_span("vector_retrieval", content_attributes(query)) as span:
+            semantic_docs = await self._semantic_search(
+                query=query,
+                top_k=top_k * 4,  # Candidate pool for fusion/reranking
+                where=where_filter,
+            )
+            span.set_attribute("retrieval.vector.result_count", len(semantic_docs))
 
         if semantic_only:
             keyword_docs = []
         else:
-            keyword_docs = await self._keyword_search(
-                query=query,
-                top_k=top_k * 2,
-                where=where_filter,
-            )
+            with trace_span("keyword_retrieval") as span:
+                keyword_docs = await self._keyword_search(
+                    query=query,
+                    top_k=top_k * 4,
+                    where=where_filter,
+                )
+                span.set_attribute("retrieval.keyword.result_count", len(keyword_docs))
 
         # Fuse results using RRF
-        fused_docs = self._reciprocal_rank_fusion(
-            semantic_docs=semantic_docs,
-            keyword_docs=keyword_docs,
-            top_k=top_k,
-        )
+        with trace_span("rank_fusion") as span:
+            fused_docs = self._reciprocal_rank_fusion(
+                semantic_docs=semantic_docs,
+                keyword_docs=keyword_docs,
+                top_k=top_k * 4 if rerank and not semantic_only else top_k,
+            )
+            span.set_attribute("retrieval.fused.result_count", len(fused_docs))
+
+        if rerank and not semantic_only:
+            with trace_span("reranker") as span:
+                fused_docs = self._rerank_documents(query, fused_docs, top_k)
+                span.set_attribute("retrieval.reranked.result_count", len(fused_docs))
 
         retrieval_time = (time.time() - start_time) * 1000
 
         logger.info(
-            f"Hybrid search completed",
+            "Hybrid search completed",
             extra={
                 "query_length": len(query),
                 "semantic_results": len(semantic_docs),
@@ -199,14 +213,14 @@ class HybridRetriever:
             # Search ChromaDB
             collection = self._get_collection()
 
-            results = collection.query(
+            results = await asyncio.to_thread(collection.query,
                 query_embeddings=[query_embedding],
                 n_results=top_k,
                 where=where,
                 include=["documents", "metadatas", "distances"],
             )
 
-            documents = []
+            documents: list[RetrievedDocument] = []
             if results["ids"] and results["ids"][0]:
                 for i, doc_id in enumerate(results["ids"][0]):
                     # Convert distance to similarity score (cosine)
@@ -226,71 +240,33 @@ class HybridRetriever:
             return documents
 
         except Exception as e:
-            logger.error(f"Semantic search failed: {e}")
-            return []
+            logger.error("Semantic search failed: %s", type(e).__name__)
+            raise RuntimeError("Vector retrieval unavailable") from e
 
-    async def _keyword_search(
-        self,
-        query: str,
-        top_k: int,
-        where: Optional[dict] = None,
-    ) -> list[RetrievedDocument]:
-        """Perform keyword-based search.
+    async def _keyword_search(self, query: str, top_k: int, where=None) -> list[RetrievedDocument]:
+        """BM25 over a bounded, permission-filtered collection snapshot."""
+        from src.evaluation.retrieval import BM25Index, Chunk
 
-        Uses ChromaDB's where_document filter for text matching.
-        Extracts key entities for precise matching.
-        """
-        try:
-            collection = self._get_collection()
-
-            # Extract keywords and entities
-            keywords = self._extract_keywords(query)
-
-            if not keywords:
-                return []
-
-            documents = []
-
-            # Search for each keyword
-            for keyword in keywords[:5]:  # Limit to top 5 keywords
-                try:
-                    results = collection.query(
-                        query_texts=[keyword],  # Use text query for BM25-like search
-                        n_results=top_k,
-                        where=where,
-                        include=["documents", "metadatas", "distances"],
-                    )
-
-                    if results["ids"] and results["ids"][0]:
-                        for i, doc_id in enumerate(results["ids"][0]):
-                            # Check if already in results
-                            if any(d.document_id == doc_id for d in documents):
-                                continue
-
-                            distance = results["distances"][0][i] if results["distances"] else 0
-                            similarity = 1 - distance
-
-                            documents.append(RetrievedDocument(
-                                document_id=doc_id,
-                                content=results["documents"][0][i] if results["documents"] else "",
-                                relevance_score=max(0, similarity),
-                                source_path=results["metadatas"][0][i].get("source_path", "")
-                                    if results["metadatas"] else "",
-                                metadata=results["metadatas"][0][i] if results["metadatas"] else {},
-                                retrieval_method="keyword",
-                            ))
-
-                except Exception as e:
-                    logger.debug(f"Keyword search for '{keyword}' failed: {e}")
-                    continue
-
-            # Sort by relevance and limit
-            documents.sort(key=lambda x: x.relevance_score, reverse=True)
-            return documents[:top_k]
-
-        except Exception as e:
-            logger.error(f"Keyword search failed: {e}")
-            return []
+        collection = self._get_collection()
+        args = {"limit": 10001, "include": ["documents", "metadatas"]}
+        if where:
+            args["where"] = where
+        results = await asyncio.to_thread(collection.get, **args)
+        if len(results["ids"]) > 10000:
+            raise RuntimeError("Collection exceeds local BM25 capacity; configure a search backend")
+        chunks, metadata_by_id = [], {}
+        for index, doc_id in enumerate(results["ids"]):
+            metadata = (results.get("metadatas") or [])[index] or {}
+            content = (results.get("documents") or [])[index] or ""
+            metadata_by_id[doc_id] = metadata
+            chunks.append(Chunk(doc_id, metadata.get("ticket_id", doc_id),
+                                metadata.get("source_path", ""), content))
+        ranked = BM25Index(chunks).search(query, top_k)
+        return [RetrievedDocument(
+            document_id=chunk.chunk_id, content=chunk.content, relevance_score=score,
+            source_path=chunk.source, metadata=metadata_by_id[chunk.chunk_id],
+            retrieval_method="keyword",
+        ) for chunk, score in ranked]
 
     def _extract_keywords(self, query: str) -> list[str]:
         """Extract important keywords and entities from query."""
@@ -309,6 +285,16 @@ class HybridRetriever:
             matches = re.findall(pattern, query, re.IGNORECASE)
             keywords.extend(matches)
 
+        # Preserve opaque IDs and acronyms exactly as written. These are the
+        # terms semantic embeddings are least reliable at matching.
+        keywords.extend(
+            re.findall(
+                r"\b(?:INC\d+|[A-Z]{2,}[A-Z0-9]*(?:[-_/.:][A-Z0-9]+)+|"
+                r"[A-Z]{2,6}|[A-Za-z]+\.[A-Za-z0-9.]+)\b",
+                query,
+            )
+        )
+
         # Extract important terms (nouns, technical terms)
         important_terms = [
             "latency", "throughput", "availability", "error", "failure",
@@ -322,7 +308,7 @@ class HybridRetriever:
             if term in query_lower:
                 keywords.append(term)
 
-        return list(set(keywords))
+        return list(dict.fromkeys(keywords))
 
     def _build_where_filter(self, filters: Optional[dict]) -> Optional[dict]:
         """Build ChromaDB where filter from filters dict."""
@@ -348,28 +334,70 @@ class HybridRetriever:
 
         return {"$and": conditions}
 
+    def _rerank_documents(self, query: str, documents: list[RetrievedDocument], top_k: int):
+        """Apply the same field ranking policy as the golden evaluator."""
+        from src.evaluation.retrieval import field_rerank_score
+
+        by_ticket: dict[str, RetrievedDocument] = {}
+        for document in documents:
+            ticket_id = document.metadata.get("ticket_id", document.document_id)
+            text = document.metadata.get("ticket_text", document.content)
+            fused_score = document.metadata.get("_rrf_score", document.relevance_score)
+            score, _ = field_rerank_score(query, ticket_id, text, document.metadata, fused_score)
+            document.content = text
+            document.relevance_score = min(score, 1.0)
+            previous = by_ticket.get(ticket_id)
+            if previous is None or score > previous.relevance_score:
+                by_ticket[ticket_id] = document
+        return sorted(by_ticket.values(), key=lambda doc: (-doc.relevance_score, doc.document_id))[:top_k]
+
     def _reciprocal_rank_fusion(
         self,
-        semantic_docs: list[RetrievedDocument],
-        keyword_docs: list[RetrievedDocument],
-        top_k: int,
+        semantic_docs: list[RetrievedDocument] | list[tuple[str, float]],
+        keyword_docs: list[RetrievedDocument] | list[tuple[str, float]],
+        top_k: int | None = None,
+        k: int | None = None,
     ) -> list[RetrievedDocument]:
         """Combine results using Reciprocal Rank Fusion.
 
         RRF Score = sum(1 / (k + rank)) for each ranking list
         """
+        if k is not None:
+            rrf_k = k
+        else:
+            rrf_k = self.rrf_k
+        if top_k is None:
+            top_k = len(semantic_docs) + len(keyword_docs)
+
+        def normalize(
+            values: list[RetrievedDocument] | list[tuple[str, float]], method: str
+        ) -> list[RetrievedDocument]:
+            return [
+                value
+                if isinstance(value, RetrievedDocument)
+                else RetrievedDocument(
+                    document_id=value[0],
+                    content="",
+                    relevance_score=value[1],
+                    retrieval_method=method,
+                )
+                for value in values
+            ]
+
+        normalized_semantic = normalize(semantic_docs, "semantic")
+        normalized_keyword = normalize(keyword_docs, "keyword")
         scores: dict[str, float] = {}
         doc_map: dict[str, RetrievedDocument] = {}
 
         # Score semantic results
-        for rank, doc in enumerate(semantic_docs):
-            rrf_score = self.semantic_weight / (self.rrf_k + rank + 1)
+        for rank, doc in enumerate(normalized_semantic):
+            rrf_score = self.semantic_weight / (rrf_k + rank + 1)
             scores[doc.document_id] = scores.get(doc.document_id, 0) + rrf_score
             doc_map[doc.document_id] = doc
 
         # Score keyword results
-        for rank, doc in enumerate(keyword_docs):
-            rrf_score = self.keyword_weight / (self.rrf_k + rank + 1)
+        for rank, doc in enumerate(normalized_keyword):
+            rrf_score = self.keyword_weight / (rrf_k + rank + 1)
             scores[doc.document_id] = scores.get(doc.document_id, 0) + rrf_score
 
             if doc.document_id not in doc_map:
@@ -385,6 +413,7 @@ class HybridRetriever:
         result = []
         for doc_id in sorted_ids[:top_k]:
             doc = doc_map[doc_id]
+            doc.metadata = {**doc.metadata, "_rrf_score": scores[doc_id]}
             # Normalize score to 0-1 range
             doc.relevance_score = min(scores[doc_id] * 10, 1.0)
             result.append(doc)

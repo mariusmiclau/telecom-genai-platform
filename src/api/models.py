@@ -1,6 +1,7 @@
 """Pydantic models for API request/response validation."""
 
-from typing import Optional
+from typing import Literal, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -40,6 +41,9 @@ class ChatResponse(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Response confidence score")
     tools_used: list[str] = Field(default_factory=list, description="Tools called during processing")
     session_id: Optional[str] = Field(None, description="Session ID for follow-up")
+    trace_id: Optional[str] = Field(None, description="OpenTelemetry trace ID")
+    outcome: Literal["answered", "abstained", "escalated"] = "answered"
+    mode: Literal["demo", "live"] = "live"
 
 
 class IngestRequest(BaseModel):

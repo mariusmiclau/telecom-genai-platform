@@ -9,7 +9,7 @@ import random
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 from src.tools.registry import BaseTool, ToolResult
 
@@ -147,7 +147,7 @@ class SLAMonitorTool(BaseTool):
             if not service:
                 return ToolResult(
                     data={"error": f"Service {service_id} not found in {region}"},
-                    summary=f"Service not found",
+                    summary="Service not found",
                     latency_ms=(time.time() - start) * 1000,
                 )
             services = [service]
@@ -228,7 +228,7 @@ class SLAMonitorTool(BaseTool):
 
     def _get_breaches(self, services: list, region: str) -> dict:
         """Get SLA breach history."""
-        breaches = []
+        breaches: list[dict[str, Any]] = []
 
         for svc in services:
             status = self._generate_sla_status(svc, region)
