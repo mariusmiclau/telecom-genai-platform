@@ -28,16 +28,24 @@ class Runtime:
             from src.rag_pipeline.embeddings import EmbeddingService, EmbeddingSettings
             from src.rag_pipeline.postgres import PostgresTicketRetriever
 
-            embeddings = EmbeddingSettings(OPENAI_API_KEY=self.settings.openai_api_key.get_secret_value())
+            embeddings = EmbeddingSettings(
+                OPENAI_API_KEY=self.settings.openai_api_key.get_secret_value(),
+                model_name=self.settings.embedding_model_name,
+                dimensions=self.settings.embedding_dimensions,
+                base_url=self.settings.openai_base_url,
+                cache_enabled=False,
+            )
             chain = RAGChain(model=self.settings.openai_model)
             chain.api_key = self.settings.openai_api_key.get_secret_value()
+            chain.base_url = self.settings.openai_base_url
             chain.require_citations = True
             memory = PostgresConversationStore(
                 self.settings.database_url.get_secret_value(),
-                self.settings.max_concurrent_requests,
+                self.settings.max_concurrent_requests + 1,
+                retention_days=self.settings.conversation_retention_days,
             )
             retriever = PostgresTicketRetriever(memory, EmbeddingService(embeddings),
-                                                self.settings.knowledge_version, embeddings.model_name)
+                                                self.settings.knowledge_version, embeddings.model_name, embeddings.dimensions)
             self.agent = AgentOrchestrator(
                 retriever=retriever, rag_chain=chain, memory=memory, enable_tools=False,
             )

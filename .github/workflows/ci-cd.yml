@@ -33,18 +33,35 @@ jobs:
       - name: Exercise real PostgreSQL publication and retrieval
         env:
           RUN_INTEGRATION: '1'
-        run: uv run pytest tests/test_release.py -q
+        run: uv run pytest tests/test_release.py tests/test_deployment.py -q
       - name: Build and start demo container
         run: docker compose up -d --build --wait demo
       - name: Verify packaged demo
         run: uv run python scripts/verify_release.py
+      - name: Accept production stack over verified TLS
+        run: uv run python scripts/accept_deployment.py
+      - name: Report container advisories and reject fixable high/critical findings
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/.release-check:/reports" aquasec/trivy:0.76.2 image --quiet --scanners vuln --severity HIGH,CRITICAL --format json --output /reports/image-audit.json genaitelco-demo:latest
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.2 image --quiet --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 genaitelco-demo:latest
+      - name: Validate Azure infrastructure without credentials
+        run: |
+          docker run --rm -v "$PWD/infrastructure/terraform:/work" -w /work hashicorp/terraform:1.9.8 fmt -check
+          docker run --rm -v "$PWD/infrastructure/terraform:/work" -w /work hashicorp/terraform:1.9.8 init -backend=false -lockfile=readonly
+          docker run --rm -v "$PWD/infrastructure/terraform:/work" -w /work hashicorp/terraform:1.9.8 validate
+          docker run --rm -v "$PWD/infrastructure/terraform:/work" -w /work hashicorp/terraform:1.9.8 test
+      - name: Validate alert rules
+        run: docker run --rm -v "$PWD/infrastructure/prometheus:/rules:ro" --entrypoint /bin/promtool prom/prometheus:v3.5.0 check rules /rules/alerts.yaml
       - uses: actions/upload-artifact@v4
         with:
           name: telecom-genai-release
+          include-hidden-files: true
           path: |
             dist/
             coverage.xml
             /tmp/evaluation.json
+            .release-check/deployment-acceptance.json
+            .release-check/image-audit.json
       - name: Collect container diagnostics
         if: failure()
         run: docker compose --profile integration logs --tail 100

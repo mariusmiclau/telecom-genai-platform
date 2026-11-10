@@ -1,16 +1,26 @@
 FROM ghcr.io/astral-sh/uv:0.11.19 AS uv
-FROM python:3.11-slim-bookworm
+FROM python:3.11-slim-trixie AS builder
 COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /app
-ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 UV_COMPILE_BYTECODE=1
+ENV UV_COMPILE_BYTECODE=1
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 COPY datasets ./datasets
-RUN uv sync --frozen --no-dev --no-editable && useradd --uid 10001 --create-home appuser \
-    && mkdir -p /app/data/incoming && chown -R appuser:appuser /app/data
+RUN uv sync --frozen --no-dev --no-editable
+
+FROM python:3.11-slim-trixie AS runtime
+RUN apt-get update && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip uninstall -y pip setuptools wheel \
+    && useradd --uid 10001 --create-home appuser
+WORKDIR /app
+COPY --from=builder /app/.venv /app/.venv
+COPY datasets ./datasets
+RUN mkdir -p /app/data/incoming && chown -R appuser:appuser /app/data
 USER appuser
-ENV PATH="/app/.venv/bin:$PATH" APP_MODE=demo OTEL_CAPTURE_CONTENT=false
+ENV PATH="/app/.venv/bin:$PATH" APP_MODE=demo OTEL_CAPTURE_CONTENT=false \
+    PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 EXPOSE 8000
 HEALTHCHECK --interval=20s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"

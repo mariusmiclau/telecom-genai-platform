@@ -1,0 +1,18 @@
+groups:
+  - name: telecom-runtime
+    rules:
+      - alert: TelecomApiUnavailable
+        expr: up{job="telecom-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Telecom API metrics target is unavailable"}
+      - alert: TelecomDependencyFailures
+        expr: sum(rate(genai_answer_outcomes_total{outcome=~"dependency_error|timeout"}[5m])) / clamp_min(sum(rate(genai_answer_outcomes_total[5m])), 0.001) > 0.1
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "More than 10 percent of requests are failing"}
+      - alert: TelecomAuthenticationFailures
+        expr: rate(genai_auth_failures_total[5m]) > 1
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Sustained rejected API authentication"}

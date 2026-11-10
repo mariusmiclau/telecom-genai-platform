@@ -1,0 +1,49 @@
+name: Publish verified deployment image
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.19'
+          python-version: '3.11'
+      - run: uv sync --locked --extra dev
+      - run: uv run ruff check src tests scripts
+      - run: uv run pytest -q
+      - name: Build and accept the actual image to be published
+        run: |
+          docker compose build demo
+          uv run python scripts/accept_deployment.py
+      - name: Reject fixable high/critical container advisories
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.2 image --quiet --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 genaitelco-demo:latest
+      - name: Registry authentication
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push accepted image
+        id: image
+        env:
+          IMAGE_NAME: ghcr.io/${{ github.repository }}
+        run: |
+          docker tag genaitelco-demo:latest "$IMAGE_NAME:sha-${{ github.sha }}"
+          docker push "$IMAGE_NAME:sha-${{ github.sha }}"
+          DIGEST=$(docker buildx imagetools inspect "$IMAGE_NAME:sha-${{ github.sha }}" --format '{{.Manifest.Digest}}')
+          echo "reference=$IMAGE_NAME@$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Deploy this exact image: $IMAGE_NAME@$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true

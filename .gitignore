@@ -17,3 +17,9 @@ htmlcov/
 .ruff_cache/
 .pytest_cache/
 *.log
+.secrets/
+*.tfstate*
+*.tfvars
+*.tfplan
+**/.terraform/
+deploy.env

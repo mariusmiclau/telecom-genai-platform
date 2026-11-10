@@ -33,8 +33,9 @@ CREATE TABLE IF NOT EXISTS knowledge_chunks (
 
 
 class PostgresTicketRetriever:
-    def __init__(self, store, embeddings, version: str, model: str):
+    def __init__(self, store, embeddings, version: str, model: str, dimensions: int | None = None):
         self.store, self.embeddings, self.version, self.model = store, embeddings, version, model
+        self.dimensions = dimensions
 
     async def start(self, require_data=True):
         await asyncio.to_thread(self.store._transaction, SCHEMA)
@@ -43,9 +44,11 @@ class PostgresTicketRetriever:
 
     async def ready(self):
         rows = await asyncio.to_thread(self.store._transaction,
-            "SELECT embedding_model FROM knowledge_versions WHERE name=%s", (self.version,), True)
-        if not rows or rows[0][0] != self.model:
+            "SELECT embedding_model,dimensions,documents FROM knowledge_versions WHERE name=%s", (self.version,), True)
+        if not rows or rows[0][0] != self.model or (self.dimensions and rows[0][1] != self.dimensions):
             raise RuntimeError("Publish a non-empty snapshot with the configured embedding model before live startup")
+        if rows[0][1] * rows[0][2] * 3 > 2_000_000:
+            raise RuntimeError("Snapshot exceeds bounded vector capacity")
 
     async def publish(self, tickets: list[dict], source_bytes: bytes):
         if not tickets or len({row["ticket_id"] for row in tickets}) != len(tickets):
@@ -53,10 +56,16 @@ class PostgresTicketRetriever:
         chunks = ticket_aware_chunks(tickets)
         if len(chunks) > 10000:
             raise ValueError("Release capacity is 10,000 chunks per snapshot")
+        if self.dimensions and len(chunks) * self.dimensions > 2_000_000:
+            raise ValueError("Snapshot exceeds bounded vector capacity; use smaller snapshots")
         vectors = await self.embeddings.embed_documents([chunk.content for chunk in chunks])
         if len(vectors) != len(chunks) or not vectors or not vectors[0]:
             raise ValueError("Embedding provider returned invalid results")
         dimensions = len(vectors[0])
+        if self.dimensions and dimensions != self.dimensions:
+            raise ValueError("Provider returned dimensions different from configured embedding contract")
+        if len(chunks) * dimensions > 2_000_000:
+            raise ValueError("Snapshot exceeds bounded vector capacity")
         if any(len(vector) != dimensions or not all(math.isfinite(value) for value in vector) for vector in vectors):
             raise ValueError("Embeddings must have consistent finite dimensions")
         await asyncio.to_thread(self._publish, tickets, chunks, vectors, dimensions, hashlib.sha256(source_bytes).hexdigest())

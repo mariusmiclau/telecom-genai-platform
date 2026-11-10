@@ -12,6 +12,7 @@ from src.api.models import ChatRequest, ChatResponse, IngestRequest, IngestRespo
 from src.guardrails.input_filter import InputFilter
 from src.guardrails.output_filter import OutputFilter
 from src.monitoring.metrics import (
+    ANSWER_OUTCOMES,
     HALLUCINATION_SCORE,
     REQUEST_COUNT,
     REQUEST_LATENCY,
@@ -23,6 +24,14 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 input_filter = InputFilter()
 output_filter = OutputFilter()
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+async def forget_session(session_id: str, request: Request):
+    runtime = request.app.state.runtime
+    if runtime.agent is None:
+        raise HTTPException(503, "Live runtime is not ready")
+    await runtime.agent.memory.forget(session_id)
 
 
 def validate_query(message):
@@ -67,6 +76,7 @@ async def chat(payload: ChatRequest, request: Request):
                 result = await runtime.agent.process(payload.message, session_id, payload.context)
         filtered = output_filter.apply(result.response, result.sources)
         HALLUCINATION_SCORE.observe(result.confidence)
+        ANSWER_OUTCOMES.labels(outcome="answered" if filtered.sources else "abstained").inc()
         track_token_usage(result.tokens_used)
         return ChatResponse(
             response=filtered.text, sources=filtered.sources, confidence=result.confidence,
@@ -74,8 +84,10 @@ async def chat(payload: ChatRequest, request: Request):
             trace_id=current_trace_id(), outcome="answered" if filtered.sources else "abstained", mode="live",
         )
     except TimeoutError:
+        ANSWER_OUTCOMES.labels(outcome="timeout").inc()
         raise HTTPException(504, "Request deadline exceeded") from None
     except Exception:
+        ANSWER_OUTCOMES.labels(outcome="dependency_error").inc()
         logger.exception("Chat request failed")
         REQUEST_COUNT.labels(endpoint="/chat", method="POST_ERROR").inc()
         raise HTTPException(503, "A required dependency is unavailable") from None

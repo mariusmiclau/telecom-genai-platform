@@ -1,0 +1,21 @@
+# Used only together with compose.production.yaml by scripts/accept_deployment.py.
+services:
+  api:
+    environment: &fixture_environment
+      OPENAI_BASE_URL: http://provider:9000/v1
+      ALLOW_HTTP_MODEL_ENDPOINT: "true"
+      EMBEDDING_MODEL_NAME: acceptance-embedding
+      EMBEDDING_DIMENSIONS: "384"
+    depends_on:
+      provider: {condition: service_healthy}
+  publisher:
+    environment: *fixture_environment
+  provider:
+    image: ${APP_IMAGE}
+    command: ["uvicorn", "provider_stub:app", "--app-dir", "/acceptance", "--host", "0.0.0.0", "--port", "9000"]
+    volumes: ["./tests/provider_stub.py:/acceptance/provider_stub.py:ro"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9000/health')"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

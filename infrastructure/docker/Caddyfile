@@ -1,0 +1,19 @@
+{$DOMAIN} {
+    encode gzip
+    request_body {
+        max_size 5MB
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+    }
+    # Metrics, documentation and schema are operator-only internal surfaces.
+    @internal path /metrics /docs /docs/* /redoc /openapi.json
+    respond @internal 404
+    reverse_proxy api:8000 {
+        transport http {
+            response_header_timeout 50s
+        }
+    }
+}

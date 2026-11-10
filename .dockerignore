@@ -9,3 +9,9 @@ logs
 dist
 build
 *.egg-info
+.release-check
+.secrets
+**/.terraform
+*.tfstate*
+*.tfvars
+deploy.env

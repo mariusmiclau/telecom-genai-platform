@@ -67,6 +67,7 @@ class RAGChain:
         self.max_tokens = max_tokens
         self._client = None
         self.api_key = None
+        self.base_url = None
         self.require_citations = False
 
     async def _get_client(self):
@@ -77,7 +78,7 @@ class RAGChain:
                 api_key = self.api_key or os.getenv("OPENAI_API_KEY")
                 if not api_key:
                     raise ValueError("OPENAI_API_KEY environment variable required")
-                self._client = AsyncOpenAI(api_key=api_key, timeout=20.0, max_retries=1)
+                self._client = AsyncOpenAI(api_key=api_key, base_url=self.base_url, timeout=20.0, max_retries=1)
             except ImportError:
                 raise ImportError("openai package required: pip install openai")
         return self._client
