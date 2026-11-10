@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.evaluation.dataset import REQUIRED_TICKET_FIELDS
+from src.evidence import record_rejection
 from src.security import current_principal
 
 
@@ -111,12 +112,16 @@ class IngestionQueue:
                         raise ValueError("Invalid ticket schema")
                     if record["ticket_id"] in seen:
                         raise ValueError("Duplicate ticket")
+                    rejection = record_rejection(record)
+                    if rejection:
+                        raise ValueError(rejection)
                     seen.add(record["ticket_id"])
                     # ACLs are assigned from the verified job, never trusted from source text.
                     record.update(tenant_id=job["tenant"], acl_groups=job["groups"])
                     tickets.append(record)
-                except (ValueError, TypeError):
-                    rejected.append((job["id"], number, hashlib.sha256(line.encode()).hexdigest(), "invalid_record"))
+                except (ValueError, TypeError) as error:
+                    code = str(error) if str(error) in ("suspicious_source", "invalid_evidence_metadata") else "invalid_record"
+                    rejected.append((job["id"], number, hashlib.sha256(line.encode()).hexdigest(), code))
             if rejected:
                 def quarantine(cursor):
                     cursor.executemany("INSERT INTO ingestion_quarantine(job_id,line_number,record_sha256,error_code) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING", rejected)

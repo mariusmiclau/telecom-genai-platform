@@ -35,6 +35,7 @@ class AppSettings(BaseSettings):
     chroma_collection: str = "telecom_kb"
     knowledge_version: str = "tickets-v1"
     retrieval_configuration: Literal["A", "B", "C"] = "C"
+    source_review_max_age_days: int = Field(365, ge=1, le=3650)
     cors_origins: list[str] = []
     request_timeout_seconds: float = Field(45, gt=0, le=120)
     max_concurrent_requests: int = Field(4, ge=1, le=64)

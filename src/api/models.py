@@ -4,6 +4,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.evidence import ClaimLink, EvidenceConflict, EvidenceItem, SafetyNotice
+
 
 class ChatRequest(BaseModel):
     """Chat message request."""
@@ -33,6 +35,8 @@ class SourceReference(BaseModel):
     document: str = Field(..., description="Source document name")
     section: Optional[str] = Field(None, description="Specific section reference")
     relevance_score: float = Field(..., ge=0, le=1, description="Retrieval relevance score")
+    excerpt: str = ""
+    citation_id: str = ""
 
 
 class ChatResponse(BaseModel):
@@ -46,6 +50,11 @@ class ChatResponse(BaseModel):
     trace_id: Optional[str] = Field(None, description="OpenTelemetry trace ID")
     outcome: Literal["answered", "abstained", "escalated"] = "answered"
     mode: Literal["demo", "live"] = "live"
+    evidence: list[EvidenceItem] = Field(default_factory=list)
+    claims: list[ClaimLink] = Field(default_factory=list)
+    warnings: list[SafetyNotice] = Field(default_factory=list)
+    conflicts: list[EvidenceConflict] = Field(default_factory=list)
+    answer_kind: Literal["historical_resolution", "advisory", "insufficient_evidence", "conflict"] = "advisory"
 
 
 class IngestRequest(BaseModel):

@@ -19,6 +19,7 @@ jobs:
       - run: uv sync --locked --extra dev
       - run: uv run ruff check src tests scripts
       - run: uv run mypy src --ignore-missing-imports
+      - run: uv run mypy src/evidence.py --ignore-missing-imports --check-untyped-defs
       - name: Audit delivered dependencies
         run: |
           uv export --locked --no-dev --no-emit-project --format requirements-txt --output-file /tmp/requirements.txt > /dev/null
@@ -26,6 +27,10 @@ jobs:
       - run: uv run pytest -q --cov=src --cov-report=xml
       - name: Golden retrieval gate
         run: uv run python -m src.evaluation.cli --output /tmp/evaluation.json --compare-to reports/evaluation/baseline.json
+      - name: Adversarial source and evidence gate
+        run: uv run python -m src.evaluation.adversarial --output /tmp/adversarial.json
+      - name: Evidence renderer unit checks
+        run: node scripts/verify_demo_dom.cjs
       - name: Build Python distributions
         run: uv build
       - name: Start integration dependencies
@@ -33,7 +38,7 @@ jobs:
       - name: Exercise real PostgreSQL publication and retrieval
         env:
           RUN_INTEGRATION: '1'
-        run: uv run pytest tests/test_release.py tests/test_deployment.py tests/test_security_runtime.py tests/test_workflows.py -q
+        run: uv run pytest tests/test_release.py tests/test_deployment.py tests/test_security_runtime.py tests/test_workflows.py tests/test_evidence_trust.py -q
       - name: Build and start demo container
         run: docker compose up -d --build --wait demo
       - name: Verify packaged demo
@@ -60,6 +65,7 @@ jobs:
             dist/
             coverage.xml
             /tmp/evaluation.json
+            /tmp/adversarial.json
             .release-check/deployment-acceptance.json
             .release-check/production-evaluation.json
             .release-check/image-audit.json

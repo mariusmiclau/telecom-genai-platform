@@ -88,7 +88,13 @@ def render_ticket(ticket: dict[str, Any]) -> str:
         "service", "summary", "description", "symptoms", "root_cause", "resolution",
         "runbook_id",
     ]
-    return "\n".join(f"{field}: {ticket.get(field, '')}" for field in fields)
+    rendered = "\n".join(f"{field}: {ticket.get(field, '')}" for field in fields)
+    if ticket.get("document_type", "ticket") != "ticket":
+        extras = ("document_type", "reviewed_at", "valid_from", "valid_until", "software_version", "equipment_family", "fact_scope")
+        rendered += "\n" + "\n".join(f"{key}: {ticket[key]}" for key in extras if key in ticket)
+        if isinstance(ticket.get("facts"), dict):
+            rendered += "\n" + "\n".join(f"{key}: {value}" for key, value in ticket["facts"].items())
+    return rendered
 
 
 def field_rerank_score(query: str, ticket_id: str, text: str, fields: dict, fused_score: float):

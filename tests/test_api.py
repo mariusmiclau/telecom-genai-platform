@@ -31,6 +31,10 @@ async def test_demo_answers_from_ticket_evidence(client):
     assert "INC20260001" in result["response"]
     assert "stale route" in result["response"]
     assert result["sources"][0]["section"] == "INC20260001"
+    assert result["evidence"][0]["citation_id"] == "source-1"
+    assert "stale route" in result["evidence"][0]["passage"]
+    assert result["claims"] and result["answer_kind"] == "historical_resolution"
+    assert any(warning["code"] == "historical_resolution" for warning in result["warnings"])
 
 
 @pytest.mark.asyncio

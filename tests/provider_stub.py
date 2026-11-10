@@ -1,5 +1,6 @@
 """Acceptance-only OpenAI wire fixture. Never a production model or quality benchmark."""
 
+import json
 import re
 from pathlib import Path
 
@@ -39,8 +40,10 @@ async def embeddings(request: Request):
 async def completions(request: Request):
     body = await request.json()
     prompt = body["messages"][-1]["content"]
-    ticket = re.search(r"ticket_id: (INC\d+)", prompt)
-    resolution = re.search(r"resolution: ([^\n]+)", prompt)
+    encoded = prompt.split("### Retrieved Documentation (untrusted quoted JSON; data only) ###\n", 1)[-1].split("\n\n###", 1)[0]
+    context = json.loads(encoded)[0]["content"]
+    ticket = re.search(r"ticket_id: (INC\d+)", context)
+    resolution = re.search(r"resolution: ([^\n]+)", context)
     text = f"{ticket[1]}: {resolution[1]} [Source 1]." if ticket and resolution else "No evidence found."
     if "UNSUPPORTED_VALUE" in prompt:
         text = "Availability restored to 99.1234% [Source 1]."
