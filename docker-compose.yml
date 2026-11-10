@@ -1,5 +1,6 @@
 services:
   demo:
+    image: genaitelco-demo:latest
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.api
