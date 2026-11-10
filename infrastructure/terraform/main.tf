@@ -1,510 +1,285 @@
-# Azure resources for Telecom GenAI Platform production deployment
-# ------------------------------------------------------------------------------
-
-# Local values for consistent naming and tagging
 locals {
-  name_prefix = "${var.project_name}-${var.environment}"
-  common_tags = merge(var.tags, {
-    environment = var.environment
-    region      = var.region
-  })
+  name             = "${var.project_name}-${random_string.suffix.result}"
+  workload_enabled = var.deploy_api || var.deploy_publisher
+  secret_names     = { API_TOKEN = "api-token", ADMIN_TOKEN = "admin-token", OPENAI_API_KEY = "openai-key" }
+  environment = {
+    APP_MODE                           = "live", KNOWLEDGE_VERSION = var.knowledge_version,
+    OPENAI_MODEL                       = var.openai_model, EMBEDDING_MODEL_NAME = var.embedding_model,
+    EMBEDDING_DIMENSIONS               = tostring(var.embedding_dimensions),
+    OTEL_CAPTURE_CONTENT               = "false", OTEL_TRACES_EXPORTER = var.traces_exporter,
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = var.traces_endpoint,
+    DEPLOYMENT_ENVIRONMENT             = "production",
+    CONVERSATION_RETENTION_DAYS        = "30"
+  }
+  database_url = "postgresql://genai:${urlencode(random_password.database.result)}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/telecom_genai?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca-certificates.crt"
 }
 
-# Random suffix for globally unique names
 resource "random_string" "suffix" {
   length  = 6
   special = false
   upper   = false
 }
-
-# ------------------------------------------------------------------------------
-# Resource Group
-# ------------------------------------------------------------------------------
-
+resource "random_password" "database" {
+  length  = 40
+  special = false
+}
 resource "azurerm_resource_group" "main" {
-  name     = "${local.name_prefix}-rg"
-  location = var.region
-  tags     = local.common_tags
+  name     = "${local.name}-rg"
+  location = var.location
 }
-
-# ------------------------------------------------------------------------------
-# Virtual Network and Subnets
-# ------------------------------------------------------------------------------
-
 resource "azurerm_virtual_network" "main" {
-  name                = "${local.name_prefix}-vnet"
-  location            = azurerm_resource_group.main.location
+  name                = "${local.name}-vnet"
   resource_group_name = azurerm_resource_group.main.name
-  address_space       = var.vnet_address_space
-  tags                = local.common_tags
+  location            = var.location
+  address_space       = ["10.41.0.0/16"]
 }
-
-resource "azurerm_subnet" "container_apps" {
-  name                 = "container-apps-subnet"
+resource "azurerm_subnet" "apps" {
+  name                 = "apps"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.1.0/24"]
-
+  address_prefixes     = ["10.41.0.0/23"]
   delegation {
-    name = "container-apps-delegation"
+    name = "apps"
     service_delegation {
       name    = "Microsoft.App/environments"
       actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
     }
   }
 }
-
-resource "azurerm_subnet" "private_endpoints" {
-  name                                      = "private-endpoints-subnet"
-  resource_group_name                       = azurerm_resource_group.main.name
-  virtual_network_name                      = azurerm_virtual_network.main.name
-  address_prefixes                          = ["10.0.2.0/24"]
-  private_endpoint_network_policies_enabled = true
-}
-
 resource "azurerm_subnet" "database" {
-  name                 = "database-subnet"
+  name                 = "database"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.3.0/24"]
-
+  address_prefixes     = ["10.41.2.0/24"]
   delegation {
-    name = "postgresql-delegation"
+    name = "database"
     service_delegation {
       name    = "Microsoft.DBforPostgreSQL/flexibleServers"
       actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
     }
   }
 }
-
-# ------------------------------------------------------------------------------
-# Log Analytics Workspace and Application Insights
-# ------------------------------------------------------------------------------
-
-resource "azurerm_log_analytics_workspace" "main" {
-  name                = "${local.name_prefix}-logs-${random_string.suffix.result}"
-  location            = azurerm_resource_group.main.location
+resource "azurerm_private_dns_zone" "database" {
+  name                = "${local.name}.postgres.database.azure.com"
   resource_group_name = azurerm_resource_group.main.name
-  sku                 = "PerGB2018"
-  retention_in_days   = var.log_retention_days
-  tags                = local.common_tags
 }
-
-resource "azurerm_application_insights" "main" {
-  name                = "${local.name_prefix}-appinsights"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  workspace_id        = azurerm_log_analytics_workspace.main.id
-  application_type    = "web"
-  tags                = local.common_tags
-}
-
-# ------------------------------------------------------------------------------
-# Key Vault for Secrets Management
-# ------------------------------------------------------------------------------
-
-data "azurerm_client_config" "current" {}
-
-resource "azurerm_key_vault" "main" {
-  name                        = "${var.project_name}-kv-${random_string.suffix.result}"
-  location                    = azurerm_resource_group.main.location
-  resource_group_name         = azurerm_resource_group.main.name
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
-  sku_name                    = "standard"
-  soft_delete_retention_days  = 7
-  purge_protection_enabled    = var.environment == "prod"
-  enable_rbac_authorization   = true
-  tags                        = local.common_tags
-
-  network_acls {
-    default_action = var.enable_private_endpoints ? "Deny" : "Allow"
-    bypass         = "AzureServices"
-  }
-}
-
-# ------------------------------------------------------------------------------
-# Azure OpenAI Service
-# ------------------------------------------------------------------------------
-
-resource "azurerm_cognitive_account" "openai" {
-  name                  = "${local.name_prefix}-openai-${random_string.suffix.result}"
-  location              = var.region
+resource "azurerm_private_dns_zone_virtual_network_link" "database" {
+  name                  = "database"
   resource_group_name   = azurerm_resource_group.main.name
-  kind                  = "OpenAI"
-  sku_name              = "S0"
-  custom_subdomain_name = "${local.name_prefix}-openai-${random_string.suffix.result}"
-  tags                  = local.common_tags
-
-  network_acls {
-    default_action = var.enable_private_endpoints ? "Deny" : "Allow"
-  }
-
-  identity {
-    type = "SystemAssigned"
-  }
-}
-
-# GPT-4o Model Deployment
-resource "azurerm_cognitive_deployment" "gpt4o" {
-  name                 = var.openai_model_deployment_name
-  cognitive_account_id = azurerm_cognitive_account.openai.id
-
-  model {
-    format  = "OpenAI"
-    name    = var.openai_model_name
-    version = var.openai_model_version
-  }
-
-  scale {
-    type     = "Standard"
-    capacity = var.openai_capacity
-  }
-}
-
-# Embedding Model Deployment
-resource "azurerm_cognitive_deployment" "embedding" {
-  name                 = var.openai_embedding_deployment_name
-  cognitive_account_id = azurerm_cognitive_account.openai.id
-
-  model {
-    format  = "OpenAI"
-    name    = var.openai_embedding_model
-    version = "2"
-  }
-
-  scale {
-    type     = "Standard"
-    capacity = var.openai_capacity
-  }
-}
-
-# ------------------------------------------------------------------------------
-# Azure AI Search (Vector Store)
-# ------------------------------------------------------------------------------
-
-resource "azurerm_search_service" "main" {
-  name                = "${local.name_prefix}-search-${random_string.suffix.result}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku                 = var.search_sku
-  replica_count       = var.search_replica_count
-  partition_count     = var.search_partition_count
-  tags                = local.common_tags
-
-  identity {
-    type = "SystemAssigned"
-  }
-}
-
-# ------------------------------------------------------------------------------
-# Azure Database for PostgreSQL Flexible Server
-# ------------------------------------------------------------------------------
-
-resource "random_password" "database" {
-  length           = 32
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
-
-resource "azurerm_private_dns_zone" "postgresql" {
-  name                = "privatelink.postgres.database.azure.com"
-  resource_group_name = azurerm_resource_group.main.name
-  tags                = local.common_tags
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "postgresql" {
-  name                  = "postgresql-vnet-link"
-  private_dns_zone_name = azurerm_private_dns_zone.postgresql.name
-  resource_group_name   = azurerm_resource_group.main.name
+  private_dns_zone_name = azurerm_private_dns_zone.database.name
   virtual_network_id    = azurerm_virtual_network.main.id
 }
-
 resource "azurerm_postgresql_flexible_server" "main" {
-  name                          = "${local.name_prefix}-postgres-${random_string.suffix.result}"
-  location                      = azurerm_resource_group.main.location
+  name                          = "${local.name}-pg"
   resource_group_name           = azurerm_resource_group.main.name
-  version                       = var.database_version
-  delegated_subnet_id           = azurerm_subnet.database.id
-  private_dns_zone_id           = azurerm_private_dns_zone.postgresql.id
-  administrator_login           = var.database_admin_username
+  location                      = var.location
+  version                       = "16"
+  administrator_login           = "genai"
   administrator_password        = random_password.database.result
-  storage_mb                    = var.database_storage_mb
-  sku_name                      = var.database_sku
-  backup_retention_days         = var.environment == "prod" ? 35 : 7
-  geo_redundant_backup_enabled  = var.environment == "prod"
-  zone                          = "1"
-  tags                          = local.common_tags
-
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.postgresql]
+  delegated_subnet_id           = azurerm_subnet.database.id
+  private_dns_zone_id           = azurerm_private_dns_zone.database.id
+  public_network_access_enabled = false
+  sku_name                      = "B_Standard_B1ms"
+  storage_mb                    = 32768
+  backup_retention_days         = 35
+  depends_on                    = [azurerm_private_dns_zone_virtual_network_link.database]
+  lifecycle { prevent_destroy = true }
 }
-
 resource "azurerm_postgresql_flexible_server_database" "main" {
   name      = "telecom_genai"
   server_id = azurerm_postgresql_flexible_server.main.id
   charset   = "UTF8"
   collation = "en_US.utf8"
+  lifecycle { prevent_destroy = true }
 }
-
-# Store database password in Key Vault
-resource "azurerm_key_vault_secret" "database_password" {
-  name         = "database-password"
-  value        = random_password.database.result
-  key_vault_id = azurerm_key_vault.main.id
-  tags         = local.common_tags
-
-  depends_on = [azurerm_role_assignment.kv_admin]
-}
-
-# ------------------------------------------------------------------------------
-# Azure Cache for Redis
-# ------------------------------------------------------------------------------
-
-resource "azurerm_redis_cache" "main" {
-  name                = "${local.name_prefix}-redis-${random_string.suffix.result}"
-  location            = azurerm_resource_group.main.location
+resource "azurerm_container_registry" "main" {
+  name                = replace(local.name, "-", "")
   resource_group_name = azurerm_resource_group.main.name
-  capacity            = var.redis_capacity
-  family              = var.redis_family
-  sku_name            = var.redis_sku
-  enable_non_ssl_port = false
-  minimum_tls_version = "1.2"
-  tags                = local.common_tags
-
-  redis_configuration {
-    maxmemory_policy = "volatile-lru"
-  }
+  location            = var.location
+  sku                 = "Basic"
+  admin_enabled       = false
 }
-
-# Store Redis key in Key Vault
-resource "azurerm_key_vault_secret" "redis_key" {
-  name         = "redis-primary-key"
-  value        = azurerm_redis_cache.main.primary_access_key
-  key_vault_id = azurerm_key_vault.main.id
-  tags         = local.common_tags
-
-  depends_on = [azurerm_role_assignment.kv_admin]
+resource "azurerm_user_assigned_identity" "runtime" {
+  name                = "${local.name}-runtime"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
 }
-
-# ------------------------------------------------------------------------------
-# Container Apps Environment and Application
-# ------------------------------------------------------------------------------
-
+resource "azurerm_role_assignment" "pull" {
+  scope                = azurerm_container_registry.main.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_user_assigned_identity.runtime.principal_id
+}
+resource "azurerm_role_assignment" "secrets" {
+  count                = local.workload_enabled ? 1 : 0
+  scope                = var.key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.runtime.principal_id
+}
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "${local.name}-logs"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
 resource "azurerm_container_app_environment" "main" {
-  name                       = "${local.name_prefix}-cae"
-  location                   = azurerm_resource_group.main.location
+  name                       = "${local.name}-environment"
   resource_group_name        = azurerm_resource_group.main.name
+  location                   = var.location
+  infrastructure_subnet_id   = azurerm_subnet.apps.id
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
-  infrastructure_subnet_id   = azurerm_subnet.container_apps.id
-  tags                       = local.common_tags
-}
-
-resource "azurerm_container_app" "api" {
-  name                         = "${local.name_prefix}-api"
-  container_app_environment_id = azurerm_container_app_environment.main.id
-  resource_group_name          = azurerm_resource_group.main.name
-  revision_mode                = "Single"
-  tags                         = local.common_tags
-
-  identity {
-    type = "SystemAssigned"
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
   }
-
-  ingress {
-    external_enabled = true
-    target_port      = 8000
-    transport        = "http"
-
-    traffic_weight {
-      percentage      = 100
-      latest_revision = true
+}
+resource "azurerm_container_app_job" "publisher" {
+  count                        = var.deploy_publisher ? 1 : 0
+  name                         = "${local.name}-publish"
+  resource_group_name          = azurerm_resource_group.main.name
+  location                     = var.location
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  replica_timeout_in_seconds   = 1800
+  replica_retry_limit          = 0
+  manual_trigger_config {
+    parallelism              = 1
+    replica_completion_count = 1
+  }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.runtime.id]
+  }
+  registry {
+    server   = azurerm_container_registry.main.login_server
+    identity = azurerm_user_assigned_identity.runtime.id
+  }
+  dynamic "secret" {
+    for_each = var.secret_ids
+    content {
+      name                = secret.key
+      key_vault_secret_id = secret.value
+      identity            = azurerm_user_assigned_identity.runtime.id
     }
   }
-
+  secret {
+    name  = "database-url"
+    value = local.database_url
+  }
   template {
-    min_replicas = var.container_app_min_replicas
-    max_replicas = var.container_app_max_replicas
-
+    container {
+      name    = "publisher"
+      image   = var.container_image
+      cpu     = 0.5
+      memory  = "1Gi"
+      command = ["python", "-m", "src.operations", "publish"]
+      args    = ["--source", var.dataset_path, "--version", var.knowledge_version]
+      dynamic "env" {
+        for_each = local.environment
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+      dynamic "env" {
+        for_each = local.secret_names
+        content {
+          name        = env.key
+          secret_name = env.value
+        }
+      }
+      env {
+        name        = "DATABASE_URL"
+        secret_name = "database-url"
+      }
+    }
+  }
+  lifecycle {
+    precondition {
+      condition     = var.container_image != null && var.key_vault_id != null && alltrue([for name in values(local.secret_names) : contains(keys(var.secret_ids), name)])
+      error_message = "Workloads require a pinned image, Key Vault ID and all three secret IDs."
+    }
+  }
+  depends_on = [azurerm_role_assignment.pull, azurerm_role_assignment.secrets, azurerm_postgresql_flexible_server_database.main]
+}
+resource "azurerm_container_app" "api" {
+  count                        = var.deploy_api ? 1 : 0
+  name                         = "${local.name}-api"
+  resource_group_name          = azurerm_resource_group.main.name
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  revision_mode                = "Single"
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.runtime.id]
+  }
+  registry {
+    server   = azurerm_container_registry.main.login_server
+    identity = azurerm_user_assigned_identity.runtime.id
+  }
+  dynamic "secret" {
+    for_each = var.secret_ids
+    content {
+      name                = secret.key
+      key_vault_secret_id = secret.value
+      identity            = azurerm_user_assigned_identity.runtime.id
+    }
+  }
+  secret {
+    name  = "database-url"
+    value = local.database_url
+  }
+  ingress {
+    external_enabled           = var.external_ingress
+    allow_insecure_connections = false
+    target_port                = 8000
+    transport                  = "http"
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+  template {
+    min_replicas = 1
+    max_replicas = 1
     container {
       name   = "api"
       image  = var.container_image
-      cpu    = var.container_app_cpu
-      memory = var.container_app_memory
-
-      env {
-        name  = "AZURE_OPENAI_ENDPOINT"
-        value = azurerm_cognitive_account.openai.endpoint
+      cpu    = 0.5
+      memory = "1Gi"
+      dynamic "env" {
+        for_each = local.environment
+        content {
+          name  = env.key
+          value = env.value
+        }
       }
-
-      env {
-        name  = "AZURE_OPENAI_DEPLOYMENT"
-        value = var.openai_model_deployment_name
+      dynamic "env" {
+        for_each = local.secret_names
+        content {
+          name        = env.key
+          secret_name = env.value
+        }
       }
-
       env {
-        name  = "AZURE_OPENAI_EMBEDDING_DEPLOYMENT"
-        value = var.openai_embedding_deployment_name
+        name        = "DATABASE_URL"
+        secret_name = "database-url"
       }
-
-      env {
-        name  = "AZURE_SEARCH_ENDPOINT"
-        value = "https://${azurerm_search_service.main.name}.search.windows.net"
-      }
-
-      env {
-        name  = "DATABASE_HOST"
-        value = azurerm_postgresql_flexible_server.main.fqdn
-      }
-
-      env {
-        name  = "DATABASE_NAME"
-        value = azurerm_postgresql_flexible_server_database.main.name
-      }
-
-      env {
-        name  = "REDIS_HOST"
-        value = azurerm_redis_cache.main.hostname
-      }
-
-      env {
-        name  = "REDIS_PORT"
-        value = tostring(azurerm_redis_cache.main.ssl_port)
-      }
-
-      env {
-        name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
-        value = azurerm_application_insights.main.connection_string
-      }
-
-      env {
-        name  = "KEY_VAULT_URI"
-        value = azurerm_key_vault.main.vault_uri
-      }
-
-      env {
-        name  = "ENVIRONMENT"
-        value = var.environment
-      }
-
       liveness_probe {
-        path             = "/health"
-        port             = 8000
-        transport        = "HTTP"
-        initial_delay    = 10
-        interval_seconds = 30
+        transport = "HTTP"
+        port      = 8000
+        path      = "/health"
       }
-
       readiness_probe {
-        path             = "/health"
-        port             = 8000
-        transport        = "HTTP"
-        initial_delay    = 5
-        interval_seconds = 10
+        transport = "HTTP"
+        port      = 8000
+        path      = "/ready"
       }
     }
-
-    http_scale_rule {
-      name                = "http-scaling"
-      concurrent_requests = 50
+  }
+  lifecycle {
+    precondition {
+      condition     = var.container_image != null && var.key_vault_id != null && alltrue([for name in values(local.secret_names) : contains(keys(var.secret_ids), name)])
+      error_message = "Workloads require a pinned image, Key Vault ID and all three secret IDs. Publish the snapshot before enabling the API."
     }
   }
-}
-
-# ------------------------------------------------------------------------------
-# RBAC Role Assignments
-# ------------------------------------------------------------------------------
-
-# Key Vault Admin for current user/service principal
-resource "azurerm_role_assignment" "kv_admin" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Administrator"
-  principal_id         = data.azurerm_client_config.current.object_id
-}
-
-# Container App identity access to Key Vault
-resource "azurerm_role_assignment" "container_app_kv" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_container_app.api.identity[0].principal_id
-}
-
-# Container App identity access to OpenAI
-resource "azurerm_role_assignment" "container_app_openai" {
-  scope                = azurerm_cognitive_account.openai.id
-  role_definition_name = "Cognitive Services OpenAI User"
-  principal_id         = azurerm_container_app.api.identity[0].principal_id
-}
-
-# Container App identity access to AI Search
-resource "azurerm_role_assignment" "container_app_search" {
-  scope                = azurerm_search_service.main.id
-  role_definition_name = "Search Index Data Contributor"
-  principal_id         = azurerm_container_app.api.identity[0].principal_id
-}
-
-# ------------------------------------------------------------------------------
-# Private Endpoints (Optional)
-# ------------------------------------------------------------------------------
-
-resource "azurerm_private_endpoint" "openai" {
-  count               = var.enable_private_endpoints ? 1 : 0
-  name                = "${local.name_prefix}-openai-pe"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.private_endpoints.id
-  tags                = local.common_tags
-
-  private_service_connection {
-    name                           = "openai-connection"
-    private_connection_resource_id = azurerm_cognitive_account.openai.id
-    is_manual_connection           = false
-    subresource_names              = ["account"]
-  }
-}
-
-resource "azurerm_private_endpoint" "keyvault" {
-  count               = var.enable_private_endpoints ? 1 : 0
-  name                = "${local.name_prefix}-kv-pe"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.private_endpoints.id
-  tags                = local.common_tags
-
-  private_service_connection {
-    name                           = "keyvault-connection"
-    private_connection_resource_id = azurerm_key_vault.main.id
-    is_manual_connection           = false
-    subresource_names              = ["vault"]
-  }
-}
-
-resource "azurerm_private_endpoint" "redis" {
-  count               = var.enable_private_endpoints ? 1 : 0
-  name                = "${local.name_prefix}-redis-pe"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.private_endpoints.id
-  tags                = local.common_tags
-
-  private_service_connection {
-    name                           = "redis-connection"
-    private_connection_resource_id = azurerm_redis_cache.main.id
-    is_manual_connection           = false
-    subresource_names              = ["redisCache"]
-  }
-}
-
-resource "azurerm_private_endpoint" "search" {
-  count               = var.enable_private_endpoints ? 1 : 0
-  name                = "${local.name_prefix}-search-pe"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.private_endpoints.id
-  tags                = local.common_tags
-
-  private_service_connection {
-    name                           = "search-connection"
-    private_connection_resource_id = azurerm_search_service.main.id
-    is_manual_connection           = false
-    subresource_names              = ["searchService"]
-  }
+  depends_on = [azurerm_role_assignment.pull, azurerm_role_assignment.secrets, azurerm_postgresql_flexible_server_database.main]
 }

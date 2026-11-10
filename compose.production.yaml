@@ -1,0 +1,85 @@
+# Standalone stack: docker compose --env-file deploy.env -f compose.production.yaml ...
+services:
+  gateway:
+    image: caddy:2.10.2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN}
+    ports: ["${HTTP_BIND:-0.0.0.0:80}:80", "${HTTPS_BIND:-0.0.0.0:443}:443"]
+    volumes:
+      - ./infrastructure/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
+
+  api:
+    image: ${APP_IMAGE:?Set APP_IMAGE to an immutable image digest}
+    environment: &runtime_environment
+      APP_MODE: live
+      APP_SECRETS_DIR: /run/secrets
+      KNOWLEDGE_VERSION: ${KNOWLEDGE_VERSION:?Set KNOWLEDGE_VERSION}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-text-embedding-3-small}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
+      OTEL_CAPTURE_CONTENT: "false"
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://localhost:4318/v1/traces}
+      DEPLOYMENT_ENVIRONMENT: production
+      CONVERSATION_RETENTION_DAYS: ${CONVERSATION_RETENTION_DAYS:-30}
+    secrets: &runtime_secrets
+      - api_token
+      - admin_token
+      - database_url
+      - openai_api_key
+    depends_on:
+      postgres: {condition: service_healthy}
+    init: true
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    mem_limit: 1g
+    cpus: 2
+    pids_limit: 128
+    restart: unless-stopped
+
+  publisher:
+    profiles: ["operator"]
+    image: ${APP_IMAGE:?Set APP_IMAGE}
+    environment: *runtime_environment
+    secrets: *runtime_secrets
+    volumes: ["${DATASET_PATH:-./datasets/tickets-v2.0-ticket-aware-chunking}:/input:ro"]
+    command: ["python", "-m", "src.operations", "publish", "--source", "/input/tickets.jsonl", "--version", "${KNOWLEDGE_VERSION}"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: telecom_genai
+      POSTGRES_USER: genai
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+    secrets: [database_password]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U genai -d telecom_genai"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+secrets:
+  api_token: {file: "${SECRETS_DIR:-./.secrets}/api_token"}
+  admin_token: {file: "${SECRETS_DIR:-./.secrets}/admin_token"}
+  database_url: {file: "${SECRETS_DIR:-./.secrets}/database_url"}
+  openai_api_key: {file: "${SECRETS_DIR:-./.secrets}/openai_api_key"}
+  database_password: {file: "${SECRETS_DIR:-./.secrets}/database_password"}
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

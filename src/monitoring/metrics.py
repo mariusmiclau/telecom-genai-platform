@@ -10,6 +10,9 @@ Tracks key GenAI platform health indicators:
 
 from prometheus_client import Counter, Gauge, Histogram
 
+ANSWER_OUTCOMES = Counter("genai_answer_outcomes_total", "Published request outcomes", ["outcome"])
+AUTH_FAILURES = Counter("genai_auth_failures_total", "Rejected authentication attempts")
+
 # Request metrics
 REQUEST_COUNT = Counter(
     "genai_requests_total",

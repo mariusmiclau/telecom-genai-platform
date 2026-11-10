@@ -1,9 +1,15 @@
 # Telecom GenAI Platform
 
-Release 1.0 is a runnable telecom knowledge assistant and LLMOps case study.
+Release 1.1 is a runnable telecom knowledge assistant and LLMOps case study.
 It includes a credential-free local demo, a protected live RAG endpoint,
 versioned datasets, reproducible retrieval evaluation, request tracing, and
-tests against real PostgreSQL transactions and retrieval.
+tests against real PostgreSQL transactions and retrieval. The deployment release
+adds TLS, mounted secrets, immutable image publication, backup/restore tooling,
+conversation deletion/retention and validated Azure infrastructure.
+
+See [deployment and rollback](docs/deployment.md) for the supported production
+topology, release gates and operator inputs. Real-provider quality and remaining
+unfixed OS advisories require acceptance before a real production rollout.
 
 ## Run the delivered demo
 
@@ -38,8 +44,10 @@ Live mode is a single trusted operator deployment. Reader and admin bearer
 credentials are separate. User identity, tenant isolation, enterprise SSO,
 and real OSS/BSS actions require organization-specific integration; they are
 not claimed as implemented. Simulators are excluded from live orchestration.
-The Chroma adapter is an optional legacy extra excluded from the default install due to known unpatched advisories. The original Azure Terraform and worker/simulator Dockerfiles are retained
-as historical scaffolding, not part of the verified release deployment.
+The Chroma adapter is an optional legacy extra excluded from the default install
+due to known unpatched advisories. Worker/simulator Dockerfiles remain historical
+scaffolding. Azure Terraform now targets the supported API and private PostgreSQL;
+its mocked plans are tested, but no subscription-specific deployment is claimed.
 
 See [the operating runbook](docs/operations.md) for live setup, index
 publication, backup, recovery, and the release acceptance checklist.
@@ -80,7 +88,7 @@ Changing both chunking and retrieval does not isolate either change's causal
 effect. The result does not establish neural embedding quality, generated
 answer accuracy, or performance on real tickets. Live retrieval shares BM25
 and field-ranking code but uses the configured embedding provider. Live
-lexical retrieval is bounded to 10,000 chunks; larger collections require a
+retrieval is bounded to 10,000 chunks and 2,000,000 embedding scalars; larger collections require a
 dedicated search backend. Full methodology: [evaluation](docs/evaluation.md).
 
 ```sh

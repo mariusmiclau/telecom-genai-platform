@@ -21,14 +21,16 @@ CREATE TABLE IF NOT EXISTS platform_messages (
 );
 CREATE INDEX IF NOT EXISTS platform_messages_session
     ON platform_messages(session_id, id DESC);
+CREATE INDEX IF NOT EXISTS platform_messages_retention ON platform_messages(created_at);
 """
 
 
 class PostgresConversationStore:
-    def __init__(self, dsn: str, pool_size: int = 4):
+    def __init__(self, dsn: str, pool_size: int = 4, retention_days: int = 30):
         self.dsn = dsn
         self.pool_size = pool_size
         self.pool = None
+        self.retention_days = retention_days
 
     async def start(self):
         await asyncio.to_thread(self._start)
@@ -39,6 +41,7 @@ class PostgresConversationStore:
             options="-c statement_timeout=5000",
         )
         self._transaction(SCHEMA)
+        self._transaction("DELETE FROM platform_messages WHERE created_at < now() - (%s * interval '1 day')", (self.retention_days,))
 
     def _transaction(self, sql: str, parameters=None, fetch=False):
         if self.pool is None:
@@ -57,8 +60,8 @@ class PostgresConversationStore:
             self._transaction,
             "SELECT role, content, created_at FROM ("
             "SELECT id, role, content, created_at FROM platform_messages "
-            "WHERE session_id=%s ORDER BY id DESC LIMIT %s"
-            ") recent ORDER BY id ASC", (session_id, max_messages), True,
+            "WHERE session_id=%s AND created_at >= now() - (%s * interval '1 day') ORDER BY id DESC LIMIT %s"
+            ") recent ORDER BY id ASC", (session_id, self.retention_days, max_messages), True,
         )
         now = datetime.now(timezone.utc)
         messages = [Message(role=row[0], content=row[1], timestamp=row[2]) for row in rows]
@@ -68,12 +71,16 @@ class PostgresConversationStore:
         await asyncio.to_thread(
             self._transaction,
             "INSERT INTO platform_messages(session_id,role,content) "
-            "VALUES (%s,'user',%s),(%s,'assistant',%s)",
-            (session_id, user_message, session_id, assistant_response),
+            "VALUES (%s,'user',%s),(%s,'assistant',%s); "
+            "DELETE FROM platform_messages WHERE created_at < now() - (%s * interval '1 day')",
+            (session_id, user_message, session_id, assistant_response, self.retention_days),
         )
 
     async def ready(self):
         await asyncio.to_thread(self._transaction, "SELECT 1", None, True)
+
+    async def forget(self, session_id: str):
+        await asyncio.to_thread(self._transaction, "DELETE FROM platform_messages WHERE session_id=%s", (session_id,))
 
     async def close(self):
         if self.pool:

@@ -79,6 +79,7 @@ class EmbeddingSettings(BaseSettings):
 
     # OpenAI settings
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    base_url: str | None = None
 
     # Azure OpenAI settings
     azure_openai_api_key: str | None = Field(default=None)
@@ -160,7 +161,7 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
                     provider=self.provider_name,
                 )
 
-            self._client = AsyncOpenAI(api_key=self.settings.openai_api_key, timeout=20.0, max_retries=1)
+            self._client = AsyncOpenAI(api_key=self.settings.openai_api_key, base_url=self.settings.base_url, timeout=20.0, max_retries=1)
         return self._client
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -168,6 +169,7 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
         response = await client.embeddings.create(
             model=self.settings.model_name,
             input=texts,
+            dimensions=self.settings.dimensions,
         )
         return [item.embedding for item in response.data]
 

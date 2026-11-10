@@ -1,5 +1,6 @@
 """Validated application configuration; secrets never appear in status responses."""
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -15,6 +16,11 @@ class AppSettings(BaseSettings):
     admin_token: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
     openai_model: str = "gpt-4o"
+    openai_base_url: str = "https://api.openai.com/v1"
+    embedding_model_name: str = "text-embedding-3-small"
+    embedding_dimensions: int = Field(1536, ge=1, le=8192)
+    allow_http_model_endpoint: bool = False
+    conversation_retention_days: int = Field(30, ge=1, le=365)
     database_url: SecretStr = SecretStr("")
     chroma_host: str = "localhost"
     chroma_port: int = Field(8100, ge=1, le=65535)
@@ -27,6 +33,10 @@ class AppSettings(BaseSettings):
     ingestion_root: Path = Path("data/incoming")
     requests_per_minute: int = Field(30, ge=1)
 
+    @classmethod
+    def load(cls):
+        return cls(_secrets_dir=os.getenv("APP_SECRETS_DIR"))
+
     @model_validator(mode="after")
     def validate_live(self):
         if self.admin_token.get_secret_value() and len(self.admin_token.get_secret_value()) < 32:
@@ -34,6 +44,8 @@ class AppSettings(BaseSettings):
         if "*" in self.cors_origins:
             raise ValueError("Use explicit CORS origins")
         if self.app_mode == "live":
+            if not self.openai_base_url.startswith("https://") and not self.allow_http_model_endpoint:
+                raise ValueError("Model endpoint must use HTTPS")
             if len(self.api_token.get_secret_value()) < 32:
                 raise ValueError("Live mode requires API_TOKEN with at least 32 characters")
             if not self.openai_api_key.get_secret_value():

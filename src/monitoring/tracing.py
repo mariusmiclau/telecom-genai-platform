@@ -15,6 +15,8 @@ import os
 from contextlib import contextmanager
 from typing import Any, Iterator
 
+from src.version import VERSION
+
 logger = logging.getLogger(__name__)
 _configured = False
 
@@ -116,7 +118,7 @@ def configure_tracing(app: Any | None = None) -> bool:
             resource=Resource.create(
                 {
                     "service.name": os.getenv("OTEL_SERVICE_NAME", "telecom-genai-api"),
-                    "service.version": "0.2.0",
+                    "service.version": VERSION,
                     "deployment.environment.name": os.getenv("DEPLOYMENT_ENVIRONMENT", "local"),
                 }
             )

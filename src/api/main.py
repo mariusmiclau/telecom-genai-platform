@@ -15,15 +15,17 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from src.api.routes import router
 from src.monitoring.logging import setup_logging
+from src.monitoring.metrics import AUTH_FAILURES
 from src.monitoring.tracing import configure_tracing
 from src.runtime import Runtime
 from src.settings import AppSettings
+from src.version import VERSION
 
 
 def create_app(settings: AppSettings | None = None, runtime: Runtime | None = None):
     if settings is None:
         load_dotenv()
-    config = settings or AppSettings()
+    config = settings or AppSettings.load()
     owned_runtime = runtime or Runtime(config)
 
     @asynccontextmanager
@@ -35,7 +37,7 @@ def create_app(settings: AppSettings | None = None, runtime: Runtime | None = No
         finally:
             await owned_runtime.close()
 
-    application = FastAPI(title="Telecom GenAI Platform", version="1.0.0", lifespan=lifespan)
+    application = FastAPI(title="Telecom GenAI Platform", version=VERSION, lifespan=lifespan)
     application.state.runtime = owned_runtime
     application.state.settings = config
     application.include_router(router, prefix="/api/v1")
@@ -43,7 +45,7 @@ def create_app(settings: AppSettings | None = None, runtime: Runtime | None = No
     application.mount("/static", StaticFiles(directory=static_dir), name="static")
     application.add_middleware(
         CORSMiddleware, allow_origins=config.cors_origins,
-        allow_credentials=False, allow_methods=["GET", "POST"],
+        allow_credentials=False, allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
     )
     window_start = time.monotonic()
@@ -65,8 +67,9 @@ def create_app(settings: AppSettings | None = None, runtime: Runtime | None = No
             token = authorization[7:] if authorization.startswith("Bearer ") else ""
             expected = config.admin_token if path.startswith("/api/v1/ingest") else config.api_token
             if not expected.get_secret_value() or not secrets.compare_digest(token.encode(), expected.get_secret_value().encode()):
+                AUTH_FAILURES.inc()
                 return JSONResponse({"detail": "Authentication required"}, status_code=401)
-        if request.method == "POST":
+        if request.method in ("POST", "DELETE"):
             now = time.monotonic()
             if now - window_start >= 60:
                 window_start, requests = now, 0
@@ -90,7 +93,7 @@ def create_app(settings: AppSettings | None = None, runtime: Runtime | None = No
 
     @application.get("/health")
     async def health():
-        return {"status": "healthy", "version": "1.0.0", "mode": config.app_mode}
+        return {"status": "healthy", "version": VERSION, "mode": config.app_mode}
 
     @application.get("/ready")
     async def ready():

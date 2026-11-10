@@ -2,11 +2,14 @@
 
 ## Delivered scope
 
-Version 1.0 delivers the local demo, protected single-operator live RAG runtime,
+Version 1.1 delivers the local demo, protected single-operator live RAG runtime,
 dataset/evaluation tooling, Python distributions and Docker image. It is not a
 certification for use against a carrier network. Cloud deployment, enterprise
 identity, tenant document ACLs, operational actions and real-ticket acceptance
 require the receiving organization's accounts, policies and approved data.
+Use [the deployment runbook](deployment.md) for remote HTTPS deployment,
+mounted secrets, supported Azure infrastructure and the verified recovery drill.
+The setup below is for localhost development only.
 
 ## Live setup
 
@@ -46,7 +49,8 @@ evaluate it, and change KNOWLEDGE_VERSION only after acceptance. Restart the
 runtime and verify `/ready` and a known cited query. Roll back by restoring the
 previous snapshot setting and image version. Keep previous snapshots until
 the rollback window closes. Never mix embedding models or dimensions in one
-snapshot. Live BM25 supports up to 10,000 chunks and rejects larger snapshots.
+snapshot. Live retrieval permits at most 10,000 chunks and 2,000,000 embedding
+scalars, and rejects larger snapshots before serving traffic.
 
 ## Persistence and schema
 
@@ -54,9 +58,11 @@ The v1 runtime installs an idempotent `platform_messages` schema at startup,
 independent of legacy conversation tables. Complete user/assistant turns are
 saved in one transaction. The pool and statement deadlines bound database work.
 Schema changes after v1 require a reviewed forward migration and backup.
-There is no automatic content retention deletion in this release: configure
-retention and deletion with the receiving organization before storing personal
-data. A shared operator token represents one trust domain, not multiple users.
+Conversation retention defaults to 30 days, with expiry filtering on reads and
+physical deletion at startup and successful writes. Session deletion is available
+through authenticated DELETE /api/v1/sessions/{session_id}. Inactive systems
+need scheduled maintenance for timely physical erasure. A shared operator token
+represents one trust domain, not multiple users.
 
 ## Failure handling
 
