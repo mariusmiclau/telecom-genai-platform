@@ -1,7 +1,7 @@
 # Golden retrieval evaluation
 
-Dataset: `tickets-v2.0-ticket-aware-chunking`  
-Golden questions: 50  
+Dataset: `tickets-v2.0-ticket-aware-chunking`<br>
+Golden questions: 50<br>
 Embedding: `telecom-hashing-embedding-v1` (384 dimensions)
 
 | Configuration | Recall@1 | Recall@5 | Recall@10 | MRR | nDCG@5 | Evidence coverage@5 | p95 latency (ms) |

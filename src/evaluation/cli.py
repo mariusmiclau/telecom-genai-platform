@@ -17,8 +17,8 @@ def _markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Golden retrieval evaluation",
         "",
-        f"Dataset: `{report['dataset_version']}`  ",
-        f"Golden questions: {report['golden_questions']}  ",
+        f"Dataset: `{report['dataset_version']}`<br>",
+        f"Golden questions: {report['golden_questions']}<br>",
         f"Embedding: `{report['embedding']['model']}` ({report['embedding']['dimensions']} dimensions)",
         "",
         "| Configuration | Recall@1 | Recall@5 | Recall@10 | MRR | nDCG@5 | Evidence coverage@5 | p95 latency (ms) |",
