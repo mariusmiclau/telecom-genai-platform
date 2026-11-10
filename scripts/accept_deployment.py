@@ -9,12 +9,54 @@ import json
 import os
 import ssl
 import subprocess
+import time
 import urllib.error
 import urllib.request
 import uuid
 from pathlib import Path
 
+from prometheus_client.parser import text_string_to_metric_families
+
 from src.deployment import initialize_secrets
+from src.monitoring.tracing import REQUIRED_TRACE_STAGES
+
+
+def verify_trace_export(logs: str, trace_id: str):
+    """Check real exported JSON spans for one API response, not span-name declarations."""
+    decoder = json.JSONDecoder()
+    spans = []
+    position = 0
+    while (position := logs.find("{", position)) != -1:
+        try:
+            value, end = decoder.raw_decode(logs, position)
+            position = end
+        except ValueError:
+            position += 1
+            continue
+        context = value.get("context") if isinstance(value, dict) else None
+        if isinstance(context, dict) and context.get("trace_id") == "0x" + trace_id:
+            spans.append(value)
+    names = {span.get("name") for span in spans}
+    missing = set(REQUIRED_TRACE_STAGES) - names
+    if missing:
+        raise AssertionError("Missing exported trace stages: " + ", ".join(sorted(missing)))
+    for span in spans:
+        attributes = span.get("attributes") or {}
+        assert "genai.query" not in attributes, "Raw query exported with capture disabled"
+        assert "telecom.request.context" not in attributes, "Raw context exported with capture disabled"
+        assert "telecom.entities" not in attributes, "Raw entities exported with capture disabled"
+    return sorted(set(REQUIRED_TRACE_STAGES) & names)
+
+
+def verify_metrics_export(metrics: str):
+    samples = [sample for family in text_string_to_metric_families(metrics) for sample in family.samples]
+    expected = {"answered": 2, "abstained": 1, "dependency_error": 1}
+    for outcome, minimum in expected.items():
+        count = sum(sample.value for sample in samples if sample.name == "genai_answer_outcomes_total"
+                    and sample.labels.get("outcome") == outcome)
+        assert count >= minimum, f"Missing monitoring outcome: {outcome}"
+    failures = sum(sample.value for sample in samples if sample.name == "genai_auth_failures_total")
+    assert failures >= 1, "Rejected authentication was not counted"
 
 
 def accept(image: str, output: Path):
@@ -58,7 +100,8 @@ def accept(image: str, output: Path):
 
         assert request("/ready", authenticated=False)[0] == 200
         assert request("/metrics")[0] == 404
-        query = {"message": "Which incident fixed DIAMETER_TOO_BUSY on PCRF-LON-01?"}
+        query = {"message": "Which incident fixed DIAMETER_TOO_BUSY on PCRF-LON-01?",
+                 "context": {"operator_note": "acceptance-private-context"}}
         assert request("/api/v1/chat", query, authenticated=False)[0] == 401
         status, body = request("/api/v1/chat", query)
         result = json.loads(body)
@@ -66,6 +109,16 @@ def accept(image: str, output: Path):
         assert result["outcome"] == "answered", body
         assert "INC20260001" in result["response"], body
         assert result["sources"][0]["document"].endswith("INC20260001.json"), body
+        assert result["trace_id"] and len(result["trace_id"]) == 32, body
+        deadline = time.monotonic() + 10
+        while True:
+            try:
+                stages = verify_trace_export(run("logs", "--no-log-prefix", "--no-color", "api", capture=True).stdout, result["trace_id"])
+                break
+            except AssertionError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.2)
         assert request("/api/v1/chat", {**query, "session_id": result["session_id"]})[0] == 200
         unsupported_status, unsupported_body = request("/api/v1/chat", {"message": "PCRF-LON-01 UNSUPPORTED_VALUE"})
         assert unsupported_status == 200
@@ -75,6 +128,11 @@ def accept(image: str, output: Path):
         assert request("/api/v1/sessions/" + unsupported["session_id"], method="DELETE")[0] == 204
         assert request("/api/v1/chat", {"message": "PROVIDER_UNAVAILABLE"})[0] == 503
         assert request("/api/v1/sessions/" + result["session_id"], method="DELETE")[0] == 204
+        metrics = run("exec", "-T", "api", "python", "-c",
+            "from pathlib import Path; from urllib.request import Request,urlopen; "
+            "request=Request('http://localhost:8000/metrics', headers={'Authorization': 'Bearer '+Path('/run/secrets/api_token').read_text()}); "
+            "print(urlopen(request).read().decode())", capture=True).stdout
+        verify_metrics_export(metrics)
 
         def database(*args):
             return run("exec", "-T", "postgres", *args, capture=True).stdout.strip()
@@ -87,7 +145,8 @@ def accept(image: str, output: Path):
                         "SELECT count(*) FROM knowledge_chunks") == "150"
         evidence.update(tls_verified=True, unauthorized_rejected=True, live_rag_answer=True,
                         session_followup=True, provider_failure_sanitized=True, session_deletion=True,
-                        unsupported_answer_blocked=True, backup_restore=True, restored_chunks=150, status="passed")
+                        unsupported_answer_blocked=True, backup_restore=True, restored_chunks=150,
+                        exported_trace_stages=stages, trace_content_disabled=True, monitoring_verified=True, status="passed")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(evidence))

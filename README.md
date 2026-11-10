@@ -1,11 +1,14 @@
 # Telecom GenAI Platform
 
-Release 1.1 is a runnable telecom knowledge assistant and LLMOps case study.
+Release 1.1.1 is a runnable telecom knowledge assistant and LLMOps case study.
 It includes a credential-free local demo, a protected live RAG endpoint,
 versioned datasets, reproducible retrieval evaluation, request tracing, and
 tests against real PostgreSQL transactions and retrieval. The deployment release
 adds TLS, mounted secrets, immutable image publication, backup/restore tooling,
 conversation deletion/retention and validated Azure infrastructure.
+
+The [local delivery checklist](docs/local-delivery.md) records the latest
+development acceptance and the deliberately deferred infrastructure work.
 
 See [deployment and rollback](docs/deployment.md) for the supported production
 topology, release gates and operator inputs. Real-provider quality and remaining

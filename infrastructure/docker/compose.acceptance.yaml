@@ -6,6 +6,8 @@ services:
       ALLOW_HTTP_MODEL_ENDPOINT: "true"
       EMBEDDING_MODEL_NAME: acceptance-embedding
       EMBEDDING_DIMENSIONS: "384"
+      OTEL_TRACES_EXPORTER: console
+      OTEL_BSP_SCHEDULE_DELAY: "100"
     depends_on:
       provider: {condition: service_healthy}
   publisher:

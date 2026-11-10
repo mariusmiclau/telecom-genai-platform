@@ -95,7 +95,7 @@ class AgentOrchestrator:
         attributes = {
             **content_attributes(message),
             "session.id": session_id,
-            "telecom.request.context": context or {},
+            "telecom.request.context_field_count": len(context or {}),
         }
         with trace_span("query", attributes) as span:
             result = await self._process(message, session_id, context)
