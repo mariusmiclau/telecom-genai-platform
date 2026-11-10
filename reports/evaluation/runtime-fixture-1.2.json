@@ -1,0 +1,19 @@
+{
+  "backend": "runtime-postgresql",
+  "provider": "local-wire-fixture",
+  "dataset_version": "tickets-v2.0-ticket-aware-chunking",
+  "embedding_model": "acceptance-embedding",
+  "embedding_dimensions": 384,
+  "golden_questions": 50,
+  "recall_at_5": {"A": 0.76, "B": 0.86, "C": 1.0},
+  "generated_answer_review": {
+    "answers": 50,
+    "answered_outcomes": 50,
+    "expected_source_cited": 50,
+    "human_scored_answers": 0
+  },
+  "real_model_quality_measured": false,
+  "real_carrier_data_used": false,
+  "reproduce": "uv run python scripts/accept_deployment.py",
+  "notes": "The harness executes the actual runtime retriever, SDK, PostgreSQL storage and ranking. The provider is deterministic feature hashing plus a completion fixture, not a neural production model. Full per-question/review results are CI artifacts."
+}

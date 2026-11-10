@@ -76,12 +76,15 @@ async def chat(payload: ChatRequest, request: Request):
                 result = await runtime.agent.process(payload.message, session_id, payload.context)
         filtered = output_filter.apply(result.response, result.sources)
         HALLUCINATION_SCORE.observe(result.confidence)
-        ANSWER_OUTCOMES.labels(outcome="answered" if filtered.sources else "abstained").inc()
+        outcome = result.outcome
+        if outcome == "answered" and not filtered.sources:
+            outcome = "abstained"
+        ANSWER_OUTCOMES.labels(outcome=outcome).inc()
         track_token_usage(result.tokens_used)
         return ChatResponse(
             response=filtered.text, sources=filtered.sources, confidence=result.confidence,
             tools_used=[tool.name for tool in result.tools_called], session_id=session_id,
-            trace_id=current_trace_id(), outcome="answered" if filtered.sources else "abstained", mode="live",
+            trace_id=current_trace_id(), outcome=outcome, mode="live",
         )
     except TimeoutError:
         ANSWER_OUTCOMES.labels(outcome="timeout").inc()

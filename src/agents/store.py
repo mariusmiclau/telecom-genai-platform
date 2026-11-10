@@ -10,19 +10,8 @@ from datetime import datetime, timezone
 from psycopg2.pool import ThreadedConnectionPool
 
 from src.agents.memory import ConversationHistory, Message
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS platform_messages (
-    id BIGSERIAL PRIMARY KEY,
-    session_id TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS platform_messages_session
-    ON platform_messages(session_id, id DESC);
-CREATE INDEX IF NOT EXISTS platform_messages_retention ON platform_messages(created_at);
-"""
+from src.migrations import migrate
+from src.security import current_principal
 
 
 class PostgresConversationStore:
@@ -40,7 +29,11 @@ class PostgresConversationStore:
             1, self.pool_size, self.dsn, connect_timeout=5,
             options="-c statement_timeout=5000",
         )
-        self._transaction(SCHEMA)
+        connection = self.pool.getconn()
+        try:
+            migrate(connection)
+        finally:
+            self.pool.putconn(connection)
         self._transaction("DELETE FROM platform_messages WHERE created_at < now() - (%s * interval '1 day')", (self.retention_days,))
 
     def _transaction(self, sql: str, parameters=None, fetch=False):
@@ -55,32 +48,50 @@ class PostgresConversationStore:
         finally:
             self.pool.putconn(connection)
 
+    async def run(self, operation):
+        """Run a trusted multi-statement operation atomically off the event loop."""
+        return await asyncio.to_thread(self._run, operation)
+
+    def _run(self, operation):
+        if self.pool is None:
+            raise RuntimeError("Store has not started")
+        connection = self.pool.getconn()
+        try:
+            with connection:
+                with connection.cursor() as cursor:
+                    return operation(cursor)
+        finally:
+            self.pool.putconn(connection)
+
     async def get_history(self, session_id: str, max_messages: int = 10):
+        principal = current_principal()
         rows = await asyncio.to_thread(
             self._transaction,
             "SELECT role, content, created_at FROM ("
             "SELECT id, role, content, created_at FROM platform_messages "
-            "WHERE session_id=%s AND created_at >= now() - (%s * interval '1 day') ORDER BY id DESC LIMIT %s"
-            ") recent ORDER BY id ASC", (session_id, self.retention_days, max_messages), True,
+            "WHERE session_id=%s AND tenant_id=%s AND user_id=%s AND created_at >= now() - (%s * interval '1 day') ORDER BY id DESC LIMIT %s"
+            ") recent ORDER BY id ASC", (session_id, principal.tenant, principal.subject, self.retention_days, max_messages), True,
         )
         now = datetime.now(timezone.utc)
         messages = [Message(role=row[0], content=row[1], timestamp=row[2]) for row in rows]
         return ConversationHistory(session_id, messages, now, now)
 
     async def save(self, session_id, user_message, assistant_response, **kwargs):
+        principal = current_principal()
         await asyncio.to_thread(
             self._transaction,
-            "INSERT INTO platform_messages(session_id,role,content) "
-            "VALUES (%s,'user',%s),(%s,'assistant',%s); "
+            "INSERT INTO platform_messages(session_id,tenant_id,user_id,role,content) "
+            "VALUES (%s,%s,%s,'user',%s),(%s,%s,%s,'assistant',%s); "
             "DELETE FROM platform_messages WHERE created_at < now() - (%s * interval '1 day')",
-            (session_id, user_message, session_id, assistant_response, self.retention_days),
+            (session_id, principal.tenant, principal.subject, user_message, session_id, principal.tenant, principal.subject, assistant_response, self.retention_days),
         )
 
     async def ready(self):
         await asyncio.to_thread(self._transaction, "SELECT 1", None, True)
 
     async def forget(self, session_id: str):
-        await asyncio.to_thread(self._transaction, "DELETE FROM platform_messages WHERE session_id=%s", (session_id,))
+        principal = current_principal()
+        await asyncio.to_thread(self._transaction, "DELETE FROM platform_messages WHERE session_id=%s AND tenant_id=%s AND user_id=%s", (session_id, principal.tenant, principal.subject))
 
     async def close(self):
         if self.pool:

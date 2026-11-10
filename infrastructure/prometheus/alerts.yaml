@@ -16,3 +16,18 @@ groups:
         for: 5m
         labels: {severity: warning}
         annotations: {summary: "Sustained rejected API authentication"}
+      - alert: TelecomIngestionFailures
+        expr: genai_ingestion_jobs{state="failed"} > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: "An ingestion job failed in the last 15 minutes"}
+      - alert: TelecomIngestionBacklog
+        expr: genai_ingestion_oldest_pending_seconds > 900
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "An unfinished ingestion job is more than 15 minutes old"}
+      - alert: TelecomIngestionWorkerLeaseExpired
+        expr: genai_ingestion_expired_leases > 0
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: "An ingestion worker lease expired; inspect worker recovery"}

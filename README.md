@@ -1,14 +1,15 @@
 # Telecom GenAI Platform
 
-Release 1.1.1 is a runnable telecom knowledge assistant and LLMOps case study.
+Release 1.2.0 is a runnable telecom knowledge assistant and LLMOps case study.
 It includes a credential-free local demo, a protected live RAG endpoint,
 versioned datasets, reproducible retrieval evaluation, request tracing, and
 tests against real PostgreSQL transactions and retrieval. The deployment release
 adds TLS, mounted secrets, immutable image publication, backup/restore tooling,
 conversation deletion/retention and validated Azure infrastructure.
 
-The [local delivery checklist](docs/local-delivery.md) records the latest
-development acceptance and the deliberately deferred infrastructure work.
+The [roadmap completion record](docs/roadmap-1.2.md) documents the locally tested
+identity/ACLs, approvals, migrations, durable jobs, runtime-path evaluation and
+rollback checks, and separates them from external production acceptance.
 
 See [deployment and rollback](docs/deployment.md) for the supported production
 topology, release gates and operator inputs. Real-provider quality and remaining
@@ -43,10 +44,12 @@ uv run uvicorn src.api.main:app --host 127.0.0.1 --port 8000
 | `demo` (default) | Extract facts from synthetic historical incidents | Packaged dataset only |
 | `live` | Generate cited answers from an operator-published PostgreSQL snapshot | PostgreSQL, configured OpenAI key |
 
-Live mode is a single trusted operator deployment. Reader and admin bearer
-credentials are separate. User identity, tenant isolation, enterprise SSO,
-and real OSS/BSS actions require organization-specific integration; they are
-not claimed as implemented. Simulators are excluded from live orchestration.
+Bearer mode remains one trusted operator with separate reader/admin credentials.
+OIDC mode validates signed access tokens, roles, tenants and groups; retrieval
+and conversation memory enforce server-side access boundaries. Its issuer/JWKS
+integration is tested locally, not against a receiving enterprise account.
+The explicit two-person action workflow executes only a local ledger simulation;
+real OSS/BSS actions remain disabled and require an organization-specific adapter.
 The Chroma adapter is an optional legacy extra excluded from the default install
 due to known unpatched advisories. Worker/simulator Dockerfiles remain historical
 scaffolding. Azure Terraform now targets the supported API and private PostgreSQL;

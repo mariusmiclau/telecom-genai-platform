@@ -12,6 +12,25 @@ from prometheus_client import Counter, Gauge, Histogram
 
 ANSWER_OUTCOMES = Counter("genai_answer_outcomes_total", "Published request outcomes", ["outcome"])
 AUTH_FAILURES = Counter("genai_auth_failures_total", "Rejected authentication attempts")
+INGESTION_JOBS = Gauge("genai_ingestion_jobs", "Current queued/running/retry or recent failed ingestion jobs", ["state"])
+INGESTION_OLDEST = Gauge("genai_ingestion_oldest_pending_seconds", "Age of the oldest unfinished ingestion job")
+INGESTION_EXPIRED = Gauge("genai_ingestion_expired_leases", "Running ingestion jobs with an expired worker lease")
+
+
+async def collect_ingestion_metrics(store):
+    def collect(cursor):
+        cursor.execute("SELECT state,count(*) FROM ingestion_jobs WHERE state IN ('pending','running','retry') OR (state='failed' AND updated_at>now()-interval '15 minutes') GROUP BY state")
+        counts = dict(cursor.fetchall())
+        cursor.execute("SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(created_at)),0) FROM ingestion_jobs WHERE state IN ('pending','running','retry')")
+        age = float(cursor.fetchone()[0])
+        cursor.execute("SELECT count(*) FROM ingestion_jobs WHERE state='running' AND lease_until<now()")
+        expired = cursor.fetchone()[0]
+        return counts, age, expired
+    counts, age, expired = await store.run(collect)
+    for state in ("pending", "running", "retry", "failed"):
+        INGESTION_JOBS.labels(state=state).set(counts.get(state, 0))
+    INGESTION_OLDEST.set(max(0, age))
+    INGESTION_EXPIRED.set(expired)
 
 # Request metrics
 REQUEST_COUNT = Counter(

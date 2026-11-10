@@ -133,6 +133,40 @@ async def test_live_success_serializes_real_source_attribution():
 
 
 @pytest.mark.asyncio
+async def test_live_escalation_remains_distinct_from_abstention():
+    from src.agents.orchestrator import AgentResult
+    app = create_app(live_settings())
+    result = AgentResult("Contact the operations team", [], 0.0, outcome="escalated")
+    app.state.runtime.agent = SimpleNamespace(process=AsyncMock(return_value=result))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/chat", json={"message": "Create an incident"}, headers={"Authorization": "Bearer " + "r" * 32})
+    assert response.status_code == 200
+    assert response.json()["outcome"] == "escalated"
+
+
+@pytest.mark.asyncio
+async def test_live_concurrency_is_bounded_under_a_queued_burst():
+    from src.agents.orchestrator import AgentResult
+    app = create_app(live_settings(max_concurrent_requests=2, requests_per_minute=1000))
+    active, peak = 0, 0
+    async def process(*args):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        try:
+            await asyncio.sleep(0.02)
+            return AgentResult("No evidence", [], 0.0, outcome="abstained")
+        finally:
+            active -= 1
+    app.state.runtime.agent = SimpleNamespace(process=process)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        results = await asyncio.gather(*(client.post("/api/v1/chat", json={"message": "Find incident"},
+            headers={"Authorization": "Bearer " + "r" * 32}) for _ in range(12)))
+    assert all(result.status_code == 200 for result in results)
+    assert peak == 2 and active == 0
+
+
+@pytest.mark.asyncio
 async def test_live_deadline_is_enforced():
     app = create_app(live_settings(request_timeout_seconds=0.01))
     async def slow(*args):

@@ -37,6 +37,7 @@ def test_metrics_verification_checks_actual_outcomes():
         'genai_answer_outcomes_total{outcome="answered"} 2',
         'genai_answer_outcomes_total{outcome="abstained"} 1',
         'genai_answer_outcomes_total{outcome="dependency_error"} 1',
+        'genai_answer_outcomes_total{outcome="escalated"} 1',
         'genai_auth_failures_total 1',
     ])
     verify_metrics_export(metrics)

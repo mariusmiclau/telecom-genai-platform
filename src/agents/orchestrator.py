@@ -12,7 +12,7 @@ This orchestrator manages the agentic workflow:
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Literal, Optional
 
 from src.agents.memory import ConversationMemory
 from src.agents.reasoning import ReasoningEngine
@@ -46,6 +46,7 @@ class AgentResult:
     tools_called: list[ToolCall] = field(default_factory=list)
     tokens_used: int = 0
     reasoning_steps: list[str] = field(default_factory=list)
+    outcome: Literal["answered", "abstained", "escalated"] = "answered"
 
 
 class AgentOrchestrator:
@@ -140,7 +141,7 @@ class AgentOrchestrator:
         if intent.requires_tools and not self.enable_tools:
             return AgentResult(
                 response="This request requires an operational integration. Contact the network operations team; live actions are disabled in this release.",
-                sources=[], confidence=0.0, reasoning_steps=["escalate: operational action"],
+                sources=[], confidence=0.0, reasoning_steps=["escalate: operational action"], outcome="escalated",
             )
 
         # Step 3: Retrieve relevant context from RAG
@@ -154,7 +155,7 @@ class AgentOrchestrator:
         if not rag_context.documents:
             return AgentResult(
                 response="No supporting evidence was found. Please refine the question or escalate to a network engineer.",
-                sources=[], confidence=0.0, reasoning_steps=["abstain: no evidence"],
+                sources=[], confidence=0.0, reasoning_steps=["abstain: no evidence"], outcome="abstained",
             )
 
         # Step 4: Execute tool calls if needed
@@ -245,6 +246,7 @@ class AgentOrchestrator:
                 tools_called=tools_called,
                 tokens_used=response.tokens_used,
                 reasoning_steps=reasoning_steps,
+                outcome="answered" if response.sources else "abstained",
             )
 
     def _build_system_context(self, context: Optional[dict]) -> str:

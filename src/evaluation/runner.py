@@ -39,11 +39,11 @@ def _round(value: float) -> float:
 class EvaluationRunner:
     """Evaluate identical questions against A, B, and C configurations."""
 
-    def __init__(self, tickets: list[dict[str, Any]], questions: list[dict[str, Any]]):
+    def __init__(self, tickets: list[dict[str, Any]], questions: list[dict[str, Any]], retrievers: list[RetrieverProtocol] | None = None):
         self.tickets = tickets
         self.questions = questions
         self.ticket_text = {ticket["ticket_id"]: render_ticket(ticket) for ticket in tickets}
-        self.retrievers: list[RetrieverProtocol] = [
+        self.retrievers: list[RetrieverProtocol] = retrievers if retrievers is not None else [
             RecursiveVectorRetriever(tickets),
             TicketAwareHybridRetriever(tickets),
             TicketAwareRerankedRetriever(tickets),

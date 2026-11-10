@@ -9,7 +9,7 @@ class ChatRequest(BaseModel):
     """Chat message request."""
 
     message: str = Field(..., min_length=1, max_length=4000, description="User message")
-    session_id: Optional[str] = Field(None, description="Session ID for conversation continuity")
+    session_id: Optional[str] = Field(None, pattern=r"^[A-Za-z0-9_.:-]{1,128}$", description="Session ID for conversation continuity")
     context: Optional[dict] = Field(None, description="Additional context for the agent")
 
     model_config = {

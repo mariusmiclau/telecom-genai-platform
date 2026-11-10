@@ -45,7 +45,8 @@ class Runtime:
                 retention_days=self.settings.conversation_retention_days,
             )
             retriever = PostgresTicketRetriever(memory, EmbeddingService(embeddings),
-                                                self.settings.knowledge_version, embeddings.model_name, embeddings.dimensions)
+                                                self.settings.knowledge_version, embeddings.model_name, embeddings.dimensions,
+                                                configuration=self.settings.retrieval_configuration)
             self.agent = AgentOrchestrator(
                 retriever=retriever, rag_chain=chain, memory=memory, enable_tools=False,
             )
