@@ -142,7 +142,8 @@ class ReasoningEngine:
         # Step 2: Extract entities from message
         with trace_span("entity_extraction") as span:
             entities = self._extract_entities(message)
-            span.set_attribute("telecom.entities", str(entities))
+            if os.getenv("OTEL_CAPTURE_CONTENT", "false").lower() == "true":
+                span.set_attribute("telecom.entities", str(entities))
             span.set_attribute("telecom.entity_count", sum(len(values) for values in entities.values()))
 
         # Step 3: Check conversation context

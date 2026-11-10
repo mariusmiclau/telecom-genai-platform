@@ -1,6 +1,6 @@
 [project]
 name = "telecom-genai-platform"
-version = "1.1.0"
+version = "1.1.1"
 description = "Enterprise GenAI integration platform for telecom automation"
 requires-python = ">=3.11"
 license = {text = "MIT"}

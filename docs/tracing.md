@@ -18,7 +18,13 @@ POST /api/v1/chat
     final_response
 ```
 
-Attributes include query length/hash, optional query text, extracted-entity count, candidate counts, prompt/source sizes, model parameters, token usage, grounding score, final confidence, and response size. Full prompts, retrieved ticket bodies, model responses, secrets, and tool payloads are not attached to spans.
+Attributes include query length/hash, optional query text, extracted-entity count, candidate counts, prompt/source sizes, model parameters, token usage, grounding score, final confidence, and response size. Raw extracted entities require explicit content capture. Request context values are never attached; only their field count is recorded. Full prompts, retrieved ticket bodies, model responses, secrets, and tool payloads are not attached to spans.
+
+The local acceptance harness exports console spans from the real containerized
+request path and verifies that all nine required stages share the API response's
+trace ID. It also rejects raw query, context and entity attributes with capture
+disabled, and checks actual Prometheus answer/failure/authentication counters.
+Console export is a test override; production telemetry remains configurable.
 
 ## Local setup
 
