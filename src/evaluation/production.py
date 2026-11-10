@@ -57,7 +57,8 @@ async def run(settings, tickets, questions, prefix, publish=False, answers=False
                       real_model_quality_measured=False, embedding_model=settings.embedding_model_name,
                       embedding_dimensions=settings.embedding_dimensions)
         if answers:
-            agent = AgentOrchestrator(retrievers["C"], chain, store, enable_tools=False)
+            agent = AgentOrchestrator(retrievers["C"], chain, store, enable_tools=False,
+                source_review_max_age_days=settings.source_review_max_age_days)
             review = []
             for question in questions:
                 session = "evaluation-" + prefix + "-" + question["question_id"]

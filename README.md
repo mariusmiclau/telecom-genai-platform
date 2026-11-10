@@ -1,6 +1,6 @@
 # Telecom GenAI Platform
 
-Release 1.2.0 is a runnable telecom knowledge assistant and LLMOps case study.
+Release 1.3.0 is a runnable telecom knowledge assistant and LLMOps case study.
 It includes a credential-free local demo, a protected live RAG endpoint,
 versioned datasets, reproducible retrieval evaluation, request tracing, and
 tests against real PostgreSQL transactions and retrieval. The deployment release
@@ -10,6 +10,11 @@ conversation deletion/retention and validated Azure infrastructure.
 The [roadmap completion record](docs/roadmap-1.2.md) documents the locally tested
 identity/ACLs, approvals, migrations, durable jobs, runtime-path evaluation and
 rollback checks, and separates them from external production acceptance.
+
+Release 1.3 adds [evidence-first responses and source safety](docs/evidence-trust.md):
+claim/source links, expandable passages, historical/freshness warnings, scoped
+conflict handling, and a 35-case adversarial regression gate. These checks are
+heuristics and local fixtures, not proof of real-model attack resistance.
 
 See [deployment and rollback](docs/deployment.md) for the supported production
 topology, release gates and operator inputs. Real-provider quality and remaining

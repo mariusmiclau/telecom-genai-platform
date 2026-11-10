@@ -9,6 +9,79 @@ const confidence = document.querySelector("#confidence");
 const traceStatus = document.querySelector("#trace-status");
 const traceList = document.querySelector(".trace-list");
 const traceLink = document.querySelector("#trace-link");
+const evidenceList = document.querySelector("#evidence-list");
+const claimList = document.querySelector("#claim-list");
+const safetyNotices = document.querySelector("#safety-notices");
+const conflictList = document.querySelector("#conflict-list");
+
+function evidenceLink(id, label) {
+  const link = document.createElement("a");
+  link.href = `#evidence-${encodeURIComponent(id)}`;
+  link.textContent = label;
+  link.addEventListener("click", () => {
+    const card = document.getElementById(`evidence-${id}`);
+    if (card) card.open = true;
+  });
+  return link;
+}
+
+function renderEvidence(data) {
+  evidenceList.replaceChildren();
+  claimList.replaceChildren();
+  safetyNotices.replaceChildren();
+  conflictList.replaceChildren();
+  const freshness = {historical: "Historical incident — not a current instruction", current: "Within review window (metadata)", unknown: "Freshness unknown"};
+  const byDocument = new Map();
+  (data.evidence || []).forEach((item) => {
+    byDocument.set(item.document_id, item.citation_id);
+    const card = document.createElement("details");
+    card.id = `evidence-${item.citation_id}`;
+    card.className = "evidence-card";
+    const summary = document.createElement("summary");
+    summary.textContent = `${item.citation_id} · ${item.document_id} · ${freshness[item.freshness] || "Freshness unknown"}`;
+    const metadata = document.createElement("p");
+    metadata.className = "helper";
+    metadata.textContent = [item.document, item.redacted && "Excerpt safety-redacted", item.reviewed_at && `Reviewed: ${item.reviewed_at}`, item.valid_until && `Valid until: ${item.valid_until}`, item.software_version && `Software: ${item.software_version}`, item.equipment_family && `Equipment: ${item.equipment_family}`].filter(Boolean).join(" · ");
+    const passage = document.createElement("pre");
+    passage.textContent = item.passage;
+    card.append(summary, metadata, passage);
+    evidenceList.append(card);
+  });
+  (data.claims || []).forEach((claim) => {
+    const item = document.createElement("li");
+    const text = document.createElement("span");
+    text.textContent = `${claim.claim} `;
+    item.append(text);
+    claim.citation_ids.forEach((id) => item.append(evidenceLink(id, `[${id}]`)));
+    claimList.append(item);
+  });
+  const notices = new Map();
+  (data.warnings || []).forEach((notice) => notices.set(notice.code + notice.message, notice.message));
+  notices.forEach((message) => {
+    const item = document.createElement("li");
+    item.textContent = message;
+    safetyNotices.append(item);
+  });
+  (data.conflicts || []).forEach((conflict) => {
+    const item = document.createElement("li");
+    const label = document.createElement("p");
+    label.textContent = `${conflict.scope}: ${conflict.fact}`;
+    item.append(label);
+    conflict.values.forEach((value) => {
+      const row = document.createElement("p");
+      row.textContent = `${value.value} — `;
+      value.source_ids.forEach((source) => {
+        const id = byDocument.get(source);
+        if (id) row.append(evidenceLink(id, source));
+      });
+      item.append(row);
+    });
+    conflictList.append(item);
+  });
+  document.querySelector("#claim-panel").hidden = !(data.claims?.length);
+  document.querySelector("#conflict-panel").hidden = !(data.conflicts?.length);
+  document.querySelector("#answer-kind").textContent = data.answer_kind === "historical_resolution" ? "Historical resolution · no live verification or action approval" : data.outcome === "escalated" ? "Human review required" : data.answer_kind === "advisory" ? "Source-based advisory · verify before acting" : "No answer published";
+}
 
 document.querySelectorAll("[data-query]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -56,6 +129,7 @@ function setSuccess(data) {
   confidence.hidden = false;
   confidence.textContent = `${Math.round(data.confidence * 100)}% retrieval score`;
   sourceList.replaceChildren();
+  renderEvidence(data);
 
   if (!data.sources?.length) {
     const item = document.createElement("li");
@@ -69,7 +143,7 @@ function setSuccess(data) {
     });
   }
 
-  traceStatus.textContent = data.outcome === "abstained" ? "No evidence" : "Complete";
+  traceStatus.textContent = data.outcome === "escalated" ? "Review required" : data.outcome === "abstained" ? "No eligible answer" : "Complete";
   traceList.classList.add("is-complete");
   if (data.trace_id) {
     traceLink.href = `http://localhost:16686/trace/${data.trace_id}`;

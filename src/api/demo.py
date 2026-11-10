@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from src.evaluation.dataset import load_jsonl
-from src.evaluation.retrieval import SearchHit, TicketAwareRerankedRetriever
+from src.evaluation.retrieval import SearchHit, TicketAwareRerankedRetriever, render_ticket
+from src.evidence import (
+    ClaimLink,
+    EvidenceConflict,
+    EvidenceItem,
+    SafetyNotice,
+    link_claims,
+    select_evidence,
+)
 from src.monitoring.tracing import content_attributes, current_trace_id, trace_span
+from src.rag_pipeline.retriever import RetrievedDocument
 
 
 @dataclass(frozen=True)
@@ -19,6 +29,12 @@ class DemoAnswer:
     hits: list[SearchHit]
     confidence: float
     trace_id: str | None
+    evidence: list[EvidenceItem] = field(default_factory=list)
+    claims: list[ClaimLink] = field(default_factory=list)
+    warnings: list[SafetyNotice] = field(default_factory=list)
+    conflicts: list[EvidenceConflict] = field(default_factory=list)
+    answer_kind: Literal["historical_resolution", "advisory", "insufficient_evidence", "conflict"] = "historical_resolution"
+    outcome: Literal["answered", "abstained", "escalated"] = "answered"
 
 
 class OfflineDemoService:
@@ -30,7 +46,8 @@ class OfflineDemoService:
     reserved for evaluation and are never read by the answer pipeline.
     """
 
-    def __init__(self, repository_root: Path | None = None):
+    def __init__(self, repository_root: Path | None = None, evidence_clock=None):
+        self.evidence_clock = evidence_clock
         self.repository_root = repository_root or Path(__file__).resolve().parents[2]
         if repository_root is None and not (self.repository_root / "datasets").is_dir():
             self.repository_root = Path(sys.prefix) / "share" / "telecom-genai"
@@ -83,6 +100,17 @@ class OfflineDemoService:
                 ticket = self.retriever.tickets.get(top_ticket or "")
                 confidence = self._confidence(hits)
                 supported = bool(ticket and confidence >= 0.25)
+                candidates = []
+                if supported and ticket is not None:
+                    for hit in hits:
+                        candidate = self.retriever.tickets[hit.ticket_id]
+                        if candidate.get("element_id") == ticket.get("element_id"):
+                            candidates.append(RetrievedDocument(hit.ticket_id, render_ticket(candidate),
+                                confidence, hit.source, candidate))
+                selection = select_evidence(candidates, now=self.evidence_clock() if self.evidence_clock else None)
+                ambiguous = any(warning.code == "compatibility_ambiguous" for warning in selection.warnings)
+                eligible_primary = bool(selection.documents and selection.documents[0].document_id == top_ticket)
+                supported = supported and eligible_primary and not selection.conflicts and not ambiguous
                 span.set_attribute("demo.evidence.found", supported)
 
             with trace_span(
@@ -95,10 +123,10 @@ class OfflineDemoService:
             ):
                 if supported and ticket is not None:
                     text = (
-                        f"{ticket['ticket_id']}: {ticket['summary']}\n\n"
-                        f"Root cause: {ticket['root_cause']}\n"
-                        f"Resolution: {ticket['resolution']}\n"
-                        f"Runbook: {ticket['runbook_id']}"
+                        f"{ticket['ticket_id']}: {ticket['summary']} [Source 1]\n\n"
+                        f"Root cause: {ticket['root_cause']} [Source 1]\n"
+                        f"Resolution: {ticket['resolution']} [Source 1]\n"
+                        f"Runbook: {ticket['runbook_id']} [Source 1]"
                     )
                 else:
                     text = (
@@ -107,12 +135,15 @@ class OfflineDemoService:
                     )
 
             with trace_span("grounding_check") as span:
+                claims, fully_linked = link_claims(text, selection.evidence) if supported else ([], False)
+                supported = supported and fully_linked
                 grounded = supported
                 span.set_attribute("genai.grounding.is_grounded", grounded)
 
             if not supported:
                 hits = []
                 confidence = 0.0
+                text = "Sources disagree on current facts. Review the conflicting evidence with a network engineer." if selection.conflicts else "Sources apply to different versions or equipment families. Specify the intended compatibility context." if ambiguous else "No grounded answer was found in the committed 50-ticket demo dataset. Try one of the supplied example questions."
             trace_id = current_trace_id()
             with trace_span(
                 "final_response",
@@ -126,4 +157,8 @@ class OfflineDemoService:
                     hits=hits,
                     confidence=confidence,
                     trace_id=trace_id,
+                    evidence=selection.evidence, claims=claims if supported else [], warnings=selection.warnings,
+                    conflicts=selection.conflicts,
+                    answer_kind="conflict" if selection.conflicts else "historical_resolution" if supported and selection.evidence[0].freshness == "historical" else "advisory" if supported else "insufficient_evidence",
+                    outcome="escalated" if selection.conflicts or ambiguous else "answered" if supported else "abstained",
                 )

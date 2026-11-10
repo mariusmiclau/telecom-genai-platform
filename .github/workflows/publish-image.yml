@@ -19,6 +19,7 @@ jobs:
       - run: uv sync --locked --extra dev
       - run: uv run ruff check src tests scripts
       - run: uv run pytest -q
+      - run: uv run python -m src.evaluation.adversarial --output /tmp/adversarial.json
       - name: Build and accept the actual image to be published
         run: |
           docker compose build demo

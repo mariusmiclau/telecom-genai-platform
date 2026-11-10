@@ -62,7 +62,20 @@
             Run a query to see the answer, confidence, tools, and source evidence.
           </div>
           <div id="answer-content" hidden>
+            <p id="answer-kind" class="answer-kind"></p>
             <p id="answer-text"></p>
+            <ul id="safety-notices" class="safety-notices" aria-label="Evidence warnings"></ul>
+            <section id="conflict-panel" class="conflict-panel" hidden aria-label="Conflicting evidence">
+              <h3>Sources disagree — review required</h3>
+              <ul id="conflict-list"></ul>
+            </section>
+            <section id="claim-panel" hidden aria-label="Claim source links">
+              <h3>Claim source links</h3>
+              <p class="helper">Matches are lexical checks, not independent verification.</p>
+              <ul id="claim-list"></ul>
+            </section>
+            <h3>Inspect retrieved evidence</h3>
+            <div id="evidence-list"></div>
             <h3>Sources</h3>
             <ol id="source-list"></ol>
           </div>

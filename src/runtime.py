@@ -49,6 +49,7 @@ class Runtime:
                                                 configuration=self.settings.retrieval_configuration)
             self.agent = AgentOrchestrator(
                 retriever=retriever, rag_chain=chain, memory=memory, enable_tools=False,
+                source_review_max_age_days=self.settings.source_review_max_age_days,
             )
             try:
                 await memory.start()

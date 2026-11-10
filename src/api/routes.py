@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from src.api.models import ChatRequest, ChatResponse, IngestRequest, IngestResponse, SourceReference
+from src.evidence import public_evidence
 from src.guardrails.input_filter import InputFilter
 from src.guardrails.output_filter import OutputFilter
 from src.monitoring.metrics import (
@@ -51,13 +52,15 @@ async def demo_chat(payload: ChatRequest, request: Request):
             result = await asyncio.to_thread(runtime.demo.answer, payload.message)
     sources = [SourceReference(
         document=hit.source, section=hit.ticket_id, relevance_score=result.confidence,
+        excerpt=result.evidence[0].passage if result.evidence else "", citation_id="source-1",
     ) for hit in result.hits[:1]]
     filtered = output_filter.apply(result.text, sources)
     return ChatResponse(
         response=filtered.text, sources=filtered.sources, confidence=result.confidence,
         tools_used=["offline_hybrid_retrieval", "weighted_rank_fusion", "field_reranker"],
         session_id=payload.session_id, trace_id=result.trace_id,
-        outcome="answered" if sources else "abstained", mode="demo",
+        outcome=result.outcome, mode="demo",
+        answer_kind=result.answer_kind, **public_evidence(result),
     )
 
 
@@ -85,6 +88,7 @@ async def chat(payload: ChatRequest, request: Request):
             response=filtered.text, sources=filtered.sources, confidence=result.confidence,
             tools_used=[tool.name for tool in result.tools_called], session_id=session_id,
             trace_id=current_trace_id(), outcome=outcome, mode="live",
+            answer_kind=result.answer_kind, **public_evidence(result),
         )
     except TimeoutError:
         ANSWER_OUTCOMES.labels(outcome="timeout").inc()

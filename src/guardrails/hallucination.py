@@ -92,7 +92,7 @@ class HallucinationDetector:
                 extra={
                     "grounding_score": score,
                     "threshold": self.threshold,
-                    "ungrounded_claims": ungrounded,
+                    "ungrounded_claim_count": len(ungrounded),
                 },
             )
 

@@ -214,3 +214,14 @@ h3 { margin: 26px 0 10px; color: var(--muted); font: 700 12px var(--font-mono); 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+/* Evidence is always rendered as text; source-provided HTML is never executed. */
+.answer-kind { font-size: .78rem; font-weight: 650; letter-spacing: .025em; }
+.safety-notices { padding-left: 1.4rem; color: #674600; background: #fff6dc; border-radius: 4px; }
+.safety-notices:empty { display: none; }
+.safety-notices li { padding: .35rem .4rem .35rem 0; }
+.evidence-card { border-top: 1px solid var(--line); padding: .85rem 0; scroll-margin-top: 1rem; }
+.evidence-card summary { cursor: pointer; font-size: .86rem; line-height: 1.5; }
+.evidence-card pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 22rem; overflow: auto; font: inherit; font-size: .85rem; line-height: 1.65; }
+#claim-list li { margin-bottom: .65rem; line-height: 1.6; }
+#claim-list a, #conflict-list a { margin-right: .3rem; }
+.conflict-panel { background: #fff1f1; border-left: 3px solid #a82c2c; padding: .7rem 1rem; color: #702121; }

@@ -15,6 +15,7 @@ from src.evaluation.retrieval import (
     render_ticket,
     ticket_aware_chunks,
 )
+from src.evidence import record_rejection
 from src.monitoring.tracing import content_attributes, trace_span
 from src.rag_pipeline.retriever import RetrievalResult, RetrievedDocument
 from src.security import current_principal
@@ -43,6 +44,8 @@ class PostgresTicketRetriever:
     async def publish(self, tickets: list[dict], source_bytes: bytes):
         if not tickets or len({row["ticket_id"] for row in tickets}) != len(tickets):
             raise ValueError("Tickets must be non-empty and have unique IDs")
+        if any(record_rejection(row) for row in tickets):
+            raise ValueError("Snapshot contains suspicious instructions or invalid evidence metadata")
         chunks = recursive_chunks(tickets) if self.configuration == "A" else ticket_aware_chunks(tickets)
         if len(chunks) > 10000:
             raise ValueError("Release capacity is 10,000 chunks per snapshot")

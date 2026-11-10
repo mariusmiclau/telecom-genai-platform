@@ -110,6 +110,9 @@ def accept(image: str, output: Path):
         assert result["outcome"] == "answered", body
         assert "INC20260001" in result["response"], body
         assert result["sources"][0]["document"].endswith("INC20260001.json"), body
+        assert result["evidence"][0]["citation_id"] == "source-1"
+        assert "stale route" in result["evidence"][0]["passage"]
+        assert result["claims"] and result["answer_kind"] == "historical_resolution", body
         assert result["trace_id"] and len(result["trace_id"]) == 32, body
         deadline = time.monotonic() + 10
         while True:
@@ -189,6 +192,7 @@ def accept(image: str, output: Path):
                         concurrent_p95_ms=round(max(elapsed for _, elapsed in burst), 2),
                         configuration_rollback_verified=True,
                         durable_ingestion_sdk_verified=True,
+                        evidence_first_verified=True,
                         production_recall_at_5={name: row["metrics"]["recall_at_5"] for name, row in evaluation["configurations"].items()},
                         exported_trace_stages=stages, trace_content_disabled=True, monitoring_verified=True, status="passed")
         output.parent.mkdir(parents=True, exist_ok=True)

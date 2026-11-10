@@ -16,6 +16,14 @@ from typing import Literal, Optional
 
 from src.agents.memory import ConversationMemory
 from src.agents.reasoning import ReasoningEngine
+from src.evidence import (
+    ClaimLink,
+    EvidenceConflict,
+    EvidenceItem,
+    SafetyNotice,
+    link_claims,
+    select_evidence,
+)
 from src.guardrails.hallucination import HallucinationDetector
 from src.monitoring.tracing import content_attributes, trace_span
 from src.rag_pipeline.chain import RAGChain
@@ -47,6 +55,11 @@ class AgentResult:
     tokens_used: int = 0
     reasoning_steps: list[str] = field(default_factory=list)
     outcome: Literal["answered", "abstained", "escalated"] = "answered"
+    evidence: list[EvidenceItem] = field(default_factory=list)
+    claims: list[ClaimLink] = field(default_factory=list)
+    warnings: list[SafetyNotice] = field(default_factory=list)
+    conflicts: list[EvidenceConflict] = field(default_factory=list)
+    answer_kind: Literal["historical_resolution", "advisory", "insufficient_evidence", "conflict"] = "advisory"
 
 
 class AgentOrchestrator:
@@ -59,11 +72,13 @@ class AgentOrchestrator:
     - Conversation memory for multi-turn context
     """
 
-    def __init__(self, retriever=None, rag_chain=None, memory=None, enable_tools=True):
+    def __init__(self, retriever=None, rag_chain=None, memory=None, enable_tools=True, evidence_clock=None, source_review_max_age_days=365):
         self.retriever = retriever or HybridRetriever()
         self.rag_chain = rag_chain or RAGChain()
         self.memory = memory or ConversationMemory()
         self.enable_tools = enable_tools
+        self.evidence_clock = evidence_clock
+        self.source_review_max_age_days = source_review_max_age_days
         self.reasoning = ReasoningEngine()
         self.tools = ToolRegistry()
         self.grounding_detector = HallucinationDetector()
@@ -155,8 +170,23 @@ class AgentOrchestrator:
         if not rag_context.documents:
             return AgentResult(
                 response="No supporting evidence was found. Please refine the question or escalate to a network engineer.",
-                sources=[], confidence=0.0, reasoning_steps=["abstain: no evidence"], outcome="abstained",
+                sources=[], confidence=0.0, reasoning_steps=["abstain: no evidence"], outcome="abstained", answer_kind="insufficient_evidence",
             )
+
+        with trace_span("evidence_policy") as policy_span:
+            selection = select_evidence(rag_context.documents, context,
+                now=self.evidence_clock() if self.evidence_clock else None, max_review_age_days=self.source_review_max_age_days)
+            policy_span.set_attribute("evidence.eligible_count", len(selection.documents))
+            policy_span.set_attribute("evidence.conflict_count", len(selection.conflicts))
+        ambiguous = any(warning.code == "compatibility_ambiguous" for warning in selection.warnings)
+        if selection.conflicts or ambiguous or not selection.documents:
+            return AgentResult(
+                response="Sources disagree on current facts. Review the conflicting evidence with a network engineer." if selection.conflicts else "Sources apply to different versions or equipment families. Specify the intended compatibility context." if ambiguous else "No eligible source remains after source safety, freshness and compatibility checks.",
+                sources=[], confidence=0.0, outcome="escalated" if selection.conflicts or ambiguous else "abstained",
+                answer_kind="conflict" if selection.conflicts else "insufficient_evidence",
+                evidence=selection.evidence, warnings=selection.warnings, conflicts=selection.conflicts,
+            )
+        rag_context.documents = selection.documents
 
         # Step 4: Execute tool calls if needed
         if intent.requires_tools:
@@ -215,10 +245,13 @@ class AgentOrchestrator:
             tool_results=tools_called,
         )
         confidence = min(retrieval_confidence, grounding.grounding_score)
-        if not grounding.is_grounded or not response.sources or response.finish_reason != "stop":
+        claims, fully_linked = link_claims(response.text, selection.evidence)
+        if not grounding.is_grounded or not response.sources or response.finish_reason != "stop" or not fully_linked:
             response.text = "The generated answer could not be verified against the retrieved evidence. Please escalate to a network engineer."
             response.sources = []
             confidence = 0.0
+            claims = []
+            selection.warnings.append(SafetyNotice(code="unsupported_claim", message="The generated answer could not be matched to its cited evidence; it was not published."))
             reasoning_steps.append("abstain: grounding, citation or completion check failed")
         reasoning_steps.append(f"Confidence score: {confidence:.2f}")
 
@@ -247,6 +280,8 @@ class AgentOrchestrator:
                 tokens_used=response.tokens_used,
                 reasoning_steps=reasoning_steps,
                 outcome="answered" if response.sources else "abstained",
+                answer_kind=("historical_resolution" if all(item.freshness == "historical" for item in selection.evidence) else "advisory") if response.sources else "insufficient_evidence",
+                evidence=selection.evidence, claims=claims, warnings=selection.warnings,
             )
 
     def _build_system_context(self, context: Optional[dict]) -> str:

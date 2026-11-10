@@ -32,6 +32,9 @@ def verify(base_url: str):
     assert "INC20260001" in response["response"]
     assert "stale route" in response["response"]
     assert response["sources"][0]["section"] == "INC20260001"
+    assert response["evidence"][0]["citation_id"] == "source-1"
+    assert response["claims"] and response["answer_kind"] == "historical_resolution"
+    assert any(warning["code"] == "historical_resolution" for warning in response["warnings"])
     no_evidence = json.loads(request("/api/v1/demo/chat", {"message": "purple macaroni unicorn astronomy"})[1])
     assert no_evidence["outcome"] == "abstained"
     print(json.dumps({"demo_smoke": "passed", "base_url": base_url, "ticket": "INC20260001"}))

@@ -200,6 +200,9 @@ class OutputFilter:
         for pii_type, pattern in self.pii_patterns.items():
             replacement = PII_REPLACEMENTS.get(pii_type, "[REDACTED]")
             filtered = pattern.sub(replacement, filtered)
+        if self.filter_credentials:
+            for pattern in self.sensitive_patterns:
+                filtered = pattern.sub("[CREDENTIAL REDACTED]", filtered)
         return filtered
 
     def check_for_pii(self, text: str) -> dict[str, int]:
