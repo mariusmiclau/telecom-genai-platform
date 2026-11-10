@@ -2,7 +2,7 @@
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatRequest(BaseModel):
@@ -27,6 +27,8 @@ class ChatRequest(BaseModel):
 
 class SourceReference(BaseModel):
     """Reference to a source document used in the response."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     document: str = Field(..., description="Source document name")
     section: Optional[str] = Field(None, description="Specific section reference")

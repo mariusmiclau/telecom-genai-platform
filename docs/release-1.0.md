@@ -3,7 +3,7 @@
 ## Acceptance evidence
 
 - Fresh Python 3.11 environment installed from `uv.lock`.
-- 179 tests passed with RUN_INTEGRATION=1, including real PostgreSQL publication,
+- 180 tests passed with RUN_INTEGRATION=1, including real PostgreSQL publication,
   immutable version protection, embedding-model checks and recent-history transactions.
 - Ruff and mypy passed.
 - Golden retrieval regression passed: Recall@5 A 78%, B 86%, C 100% on the

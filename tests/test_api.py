@@ -119,6 +119,20 @@ async def test_live_dependency_failure_is_sanitized():
 
 
 @pytest.mark.asyncio
+async def test_live_success_serializes_real_source_attribution():
+    from src.agents.orchestrator import AgentResult
+    from src.rag_pipeline.chain import SourceAttribution
+    app = create_app(live_settings())
+    result = AgentResult("Restored availability [Source 1]", [SourceAttribution("ticket1", relevance_score=0.8)], 0.8)
+    app.state.runtime.agent = SimpleNamespace(process=AsyncMock(return_value=result))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/chat", json={"message": "Find incident"}, headers={"Authorization": "Bearer " + "r" * 32})
+    assert response.status_code == 200
+    assert response.json()["sources"][0]["document"] == "ticket1"
+    assert response.json()["session_id"]
+
+
+@pytest.mark.asyncio
 async def test_live_deadline_is_enforced():
     app = create_app(live_settings(request_timeout_seconds=0.01))
     async def slow(*args):
