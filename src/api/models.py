@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from src.evidence import ClaimLink, EvidenceConflict, EvidenceItem, SafetyNotice
+from src.evidence import ClaimLink, EvidenceConflict, EvidenceItem, SafetyNotice, suspicious
 from src.investigation import Clarification, Troubleshooting
 
 
@@ -21,6 +21,9 @@ class ChatRequest(BaseModel):
         if value is not None and (len(value) > 16 or any(not isinstance(key, str) or len(key) > 64 or
                 not isinstance(item, (str, int, float, bool)) or len(str(item).encode("utf-8")) > 256 for key, item in value.items())):
             raise ValueError("Context must contain at most 16 bounded scalar fields")
+        if value is not None and any(not isinstance(item, str) or suspicious(item)
+                for key, item in value.items() if key in ("element_id", "interface", "region", "software_version", "equipment_family")):
+            raise ValueError("Scope fields must be safe text identifiers")
         return value
 
     model_config = {

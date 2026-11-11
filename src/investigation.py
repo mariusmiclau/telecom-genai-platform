@@ -30,6 +30,8 @@ class Troubleshooting(BaseModel):
 
 SCOPE_KEYS = ("element_id", "interface", "region", "software_version")
 NODE_PATTERN = r"\b(?!(?:RB|RUNBOOK)[-_])(?:[A-Z]{1,12}[-_](?:[A-Z0-9]{1,12}[-_])*\d+|(?:CORE|NODE)[-_][A-Z0-9]+)\b"
+INTERFACE_PATTERN = r"\b(?:eth\d+(?:/\d+)*|(?:ge|xe|et)-\d+(?:/\d+)+|(?:Gi|Te|GigabitEthernet)\d+(?:/\d+)+|Gx|Gy|Gr|S1-MME|N2|N3)\b"
+VERSION_PATTERN = r"\b(?:version|release|software)[ :]+(v?\d[\w.()-]*)"
 OPERATIONAL = re.compile(r"\b(?:why|troubleshoot|diagnos\w*|investigat\w*|outage|failing|down|slow|packet loss|status|health)\b", re.I)
 TICKET = re.compile(r"\b(?:INC|CHG|PRB)\d+\b", re.I)
 
@@ -39,9 +41,9 @@ def query_scope(query, context=None):
              if key in SCOPE_KEYS and isinstance(value, str) and 0 < len(value.strip()) <= 128}
     patterns = {
         "element_id": NODE_PATTERN,
-        "interface": r"\b(?:eth\d+(?:/\d+)*|(?:ge|xe|et)-\d+(?:/\d+)+|(?:Gi|Te|GigabitEthernet)\d+(?:/\d+)+|Gx|Gy|Gr|S1-MME|N2|N3)\b",
+        "interface": INTERFACE_PATTERN,
         "region": r"\bregion[ _-]+(?!is\b|was\b|or\b|and\b|please\b|unknown\b)([A-Za-z0-9_-]+)",
-        "software_version": r"\b(?:version|release|software)[ :]+(\d[\w.()-]*)",
+        "software_version": VERSION_PATTERN,
     }
     for key, pattern in patterns.items():
         match = re.search(pattern, query, re.I)
@@ -57,14 +59,18 @@ def clarify(query, context=None, documents=None):
     required = []
     if operational and len({match.group().casefold() for match in re.finditer(NODE_PATTERN, query, re.I)}) > 1:
         required.append("element_id")
+    if operational and len({match.group().casefold() for match in re.finditer(INTERFACE_PATTERN, query, re.I)}) > 1:
+        required.append("interface")
+    if operational and len({match.group(1).casefold() for match in re.finditer(VERSION_PATTERN, query, re.I)}) > 1:
+        required.append("software_version")
     if operational and not any(scope.get(key) for key in ("element_id", "region")):
         if "element_id" not in required:
             required.append("element_id")
-    if operational and re.search(r"\binterface\b", query, re.I) and not scope.get("interface"):
+    if operational and re.search(r"\binterface\b", query, re.I) and not scope.get("interface") and "interface" not in required:
         required.append("interface")
     if operational and re.search(r"\bregion\b", query, re.I) and not scope.get("region"):
         required.append("region")
-    if re.search(r"\b(?:version|release|software)\b", query, re.I) and operational and not scope.get("software_version"):
+    if re.search(r"\b(?:version|release|software)\b", query, re.I) and operational and not scope.get("software_version") and "software_version" not in required:
         required.append("software_version")
     if documents and operational and not scope.get("element_id"):
         nodes = {str(doc.metadata.get("element_id")) for doc in documents if doc.metadata.get("element_id")}

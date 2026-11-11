@@ -11,7 +11,8 @@ Context is bounded to 16 fields of at most 256 UTF-8 bytes each. It cannot set
 identity, ACLs, server policies, clocks, token budgets or model parameters.
 
 Ambiguous operational wording returns `outcome: abstained`, no published answer,
-and `clarification.required_fields` / `question`. Missing node/region, a requested
+and `clarification.required_fields` / `question`. Multiple named interfaces or
+versions require an explicit choice. Missing node/region, a requested
 but unnamed interface, and an unspecified software version are checked before
 retrieval or generation. Multiple candidate nodes in a region require a node.
 Conceptual and explicitly identified historical-ticket questions need not specify
@@ -44,7 +45,7 @@ Every completed chat response includes `answer_id`. Endpoint flow:
    `incorrect_citation_ids`, `comment`, `proposed_correction`.
 2. `GET /feedback/{feedback_id}` inspects the submitted item.
 3. `POST /feedback/{feedback_id}/review` with `approve`, `reviewed_answer`,
-   `rationale`. An independent verified OIDC identity with `feedback_review` (or
+   `rationale`. An independent verified OIDC identity with `reader` and `feedback_review` (or
    admin) must review it. Shared bearer mode and the public demo cannot approve.
 4. `GET /feedback/{feedback_id}/regression` exports an approved regression
    candidate with reference answer, expected document IDs, source snapshots and
@@ -148,7 +149,7 @@ backups and retention appropriate to the operational dataset.
 
 ## Verification
 
-Measured locally on 11 November 2026: 276 Python tests passed with PostgreSQL
+Measured locally on 11 November 2026: 279 Python tests passed with PostgreSQL
 integration enabled; 35/35 adversarial cases passed; lint, types and fake-DOM
 renderer checks passed. The HTTPS acceptance fixture passed all eight concurrent
 requests and the new investigation/feedback/replay contracts. These are local
