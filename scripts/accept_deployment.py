@@ -112,6 +112,24 @@ def accept(image: str, output: Path):
         assert result["sources"][0]["document"].endswith("INC20260001.json"), body
         assert result["evidence"][0]["citation_id"] == "source-1"
         assert "stale route" in result["evidence"][0]["passage"]
+        assert result["troubleshooting"]["likely_causes"]
+        assert result["consumption"]["completion_attempts"] == 1
+        assert result["consumption"]["reserved_token_upper_bound"] <= result["consumption"]["maximum_request_tokens"]
+        answer_path = "/api/v1/answers/" + result["answer_id"]
+        record_status, record_body = request(answer_path)
+        record_body = json.loads(record_body)
+        assert record_status == 200 and record_body["dataset"]["source_sha256"]
+        assert record_body["prompt"]["messages"] and record_body["prompt"]["model"]
+        replay_status, replay_body = request(answer_path + "/replay", {})
+        replay_body = json.loads(replay_body)
+        assert replay_status == 200 and replay_body["claim_gate_supported"] and replay_body["model_called"] is False
+        feedback_status, feedback_body = request(answer_path + "/feedback", {"rating": "wrong", "incorrect_citation_ids": ["source-1"], "comment": "Acceptance fixture only"})
+        feedback_body = json.loads(feedback_body)
+        assert feedback_status == 201 and feedback_body["state"] == "pending"
+        clarification_status, clarification_body = request("/api/v1/chat", {"message": "Why is the interface down?"})
+        clarification_body = json.loads(clarification_body)
+        assert clarification_status == 200 and clarification_body["clarification"]["required_fields"]
+        assert clarification_body["consumption"]["completion_attempts"] == 0
         assert result["claims"] and result["answer_kind"] == "historical_resolution", body
         assert result["trace_id"] and len(result["trace_id"]) == 32, body
         deadline = time.monotonic() + 10
@@ -132,6 +150,8 @@ def accept(image: str, output: Path):
         assert request("/api/v1/sessions/" + unsupported["session_id"], method="DELETE")[0] == 204
         assert request("/api/v1/chat", {"message": "PROVIDER_UNAVAILABLE"})[0] == 503
         assert request("/api/v1/sessions/" + result["session_id"], method="DELETE")[0] == 204
+        assert request(answer_path)[0] == 404
+        assert request("/api/v1/sessions/" + clarification_body["session_id"], method="DELETE")[0] == 204
         escalated_status, escalated_body = request("/api/v1/chat", {"message": "Create a ticket"})
         assert escalated_status == 200 and json.loads(escalated_body)["outcome"] == "escalated", escalated_body
 
@@ -193,12 +213,15 @@ def accept(image: str, output: Path):
                         configuration_rollback_verified=True,
                         durable_ingestion_sdk_verified=True,
                         evidence_first_verified=True,
+                        investigation_feedback_replay_verified=True,
                         production_recall_at_5={name: row["metrics"]["recall_at_5"] for name, row in evaluation["configurations"].items()},
                         exported_trace_stages=stages, trace_content_disabled=True, monitoring_verified=True, status="passed")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(evidence))
     except Exception:
+        diagnostics = run("logs", "--no-log-prefix", "--no-color", "api", capture=True, check=False).stdout
+        (directory / "failure-api.log").write_text(diagnostics, encoding="utf-8")
         run("logs", "--tail", "40", check=False)
         raise
     finally:

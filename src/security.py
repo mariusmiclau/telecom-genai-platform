@@ -61,7 +61,7 @@ class Authenticator:
                 return await asyncio.to_thread(self.decode, token)
             except (jwt.PyJWTError, ValueError, OSError):
                 raise HTTPException(401, "Authentication required") from None
-        admin = path.startswith("/api/v1/ingest") or path.startswith("/api/v1/actions")
+        admin = path.startswith("/api/v1/ingest") or path.startswith("/api/v1/actions") or (path.startswith("/api/v1/feedback") and path.endswith(("/review", "/regression")))
         expected = self.settings.admin_token if admin else self.settings.api_token
         if not expected.get_secret_value() or not secrets.compare_digest(token.encode(), expected.get_secret_value().encode()):
             raise HTTPException(401, "Authentication required")
@@ -69,6 +69,8 @@ class Authenticator:
 
 
 def route_permission(path: str, method: str):
+    if path.startswith("/api/v1/feedback") and path.endswith(("/review", "/regression")):
+        return "feedback_review"
     if path.startswith("/api/v1/ingest"):
         return "ingest"
     if path.startswith("/api/v1/actions"):

@@ -225,3 +225,8 @@ h3 { margin: 26px 0 10px; color: var(--muted); font: 700 12px var(--font-mono); 
 #claim-list li { margin-bottom: .65rem; line-height: 1.6; }
 #claim-list a, #conflict-list a { margin-right: .3rem; }
 .conflict-panel { background: #fff1f1; border-left: 3px solid #a82c2c; padding: .7rem 1rem; color: #702121; }
+input, select { max-width: 100%; padding: .6rem; border: 1px solid #5c6570; border-radius: .25rem; font: inherit; }
+#query-form details label, #feedback-panel label { display: block; margin-top: .8rem; }
+#feedback-panel textarea { width: 100%; }
+#feedback-panel { margin-top: 1.5rem; }
+.replay-output { max-height: 28rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }

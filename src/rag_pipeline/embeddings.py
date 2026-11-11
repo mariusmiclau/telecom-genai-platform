@@ -17,6 +17,8 @@ import redis.asyncio as redis
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.budgets import consumption_context, token_bound
+
 logger = logging.getLogger(__name__)
 
 
@@ -161,7 +163,7 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
                     provider=self.provider_name,
                 )
 
-            self._client = AsyncOpenAI(api_key=self.settings.openai_api_key, base_url=self.settings.base_url, timeout=20.0, max_retries=1)
+            self._client = AsyncOpenAI(api_key=self.settings.openai_api_key, base_url=self.settings.base_url, timeout=20.0, max_retries=0)
         return self._client
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -479,6 +481,11 @@ class EmbeddingService:
         last_error: Exception | None = None
 
         for attempt in range(self.settings.max_retries):
+            budget = consumption_context.get()
+            if budget:
+                tokens = sum(token_bound(text) for text in texts)
+                budget.reserve(tokens)
+                budget.embedding_token_upper_bound += tokens
             try:
                 return await self._provider.embed_texts(texts)
 

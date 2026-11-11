@@ -3,6 +3,7 @@
 import asyncio
 from typing import Any
 
+from src.answer_records import AnswerRecords
 from src.settings import AppSettings
 
 
@@ -14,13 +15,14 @@ class Runtime:
         self.ingester: Any = None
         self.capacity = asyncio.Semaphore(settings.max_concurrent_requests)
         self.started = False
+        self.answer_records = AnswerRecords(retention_days=settings.answer_retention_days)
 
     async def start(self):
         if self.started:
             return
         if self.settings.app_mode == "demo":
             from src.api.demo import OfflineDemoService
-            self.demo = await asyncio.to_thread(OfflineDemoService)
+            self.demo = await asyncio.to_thread(OfflineDemoService, source_review_max_age_days=self.settings.source_review_max_age_days)
         else:
             from src.agents.orchestrator import AgentOrchestrator
             from src.agents.store import PostgresConversationStore
@@ -34,11 +36,13 @@ class Runtime:
                 dimensions=self.settings.embedding_dimensions,
                 base_url=self.settings.openai_base_url,
                 cache_enabled=False,
+                max_retries=1,
             )
             chain = RAGChain(model=self.settings.openai_model)
             chain.api_key = self.settings.openai_api_key.get_secret_value()
             chain.base_url = self.settings.openai_base_url
             chain.require_citations = True
+            chain.max_tokens = self.settings.max_output_tokens
             memory = PostgresConversationStore(
                 self.settings.database_url.get_secret_value(),
                 self.settings.max_concurrent_requests + 1,
@@ -54,6 +58,7 @@ class Runtime:
             try:
                 await memory.start()
                 await retriever.start()
+                self.answer_records = AnswerRecords(memory, self.settings.answer_retention_days)
             except Exception:
                 await self.close()
                 raise

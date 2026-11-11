@@ -12,6 +12,8 @@ from prometheus_client import Counter, Gauge, Histogram
 
 ANSWER_OUTCOMES = Counter("genai_answer_outcomes_total", "Published request outcomes", ["outcome"])
 AUTH_FAILURES = Counter("genai_auth_failures_total", "Rejected authentication attempts")
+BUDGET_RESERVED = Counter("genai_budget_reserved_tokens_total", "Conservative request token reservations, including failed attempts; not billing")
+BUDGET_REJECTIONS = Counter("genai_budget_rejections_total", "Requests rejected by token budget")
 INGESTION_JOBS = Gauge("genai_ingestion_jobs", "Current queued/running/retry or recent failed ingestion jobs", ["state"])
 INGESTION_OLDEST = Gauge("genai_ingestion_oldest_pending_seconds", "Age of the oldest unfinished ingestion job")
 INGESTION_EXPIRED = Gauge("genai_ingestion_expired_leases", "Running ingestion jobs with an expired worker lease")

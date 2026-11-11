@@ -42,6 +42,12 @@ class AppSettings(BaseSettings):
     max_upload_bytes: int = Field(5_000_000, ge=1024, le=50_000_000)
     ingestion_root: Path = Path("data/incoming")
     requests_per_minute: int = Field(30, ge=1)
+    max_request_tokens: int = Field(24000, ge=1024, le=128000)
+    max_prompt_tokens: int = Field(16000, ge=512, le=100000)
+    max_output_tokens: int = Field(1024, ge=64, le=8192)
+    max_history_tokens: int = Field(2000, ge=0, le=20000)
+    model_retry_budget: int = Field(0, ge=0, le=2)
+    answer_retention_days: int = Field(30, ge=1, le=365)
 
     @classmethod
     def load(cls):
@@ -49,6 +55,8 @@ class AppSettings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_live(self):
+        if self.max_output_tokens + self.max_prompt_tokens > self.max_request_tokens:
+            raise ValueError("Request budget must cover prompt and output budgets")
         if self.auth_mode == "oidc":
             if not self.oidc_audience or not self.oidc_issuer or not self.oidc_jwks_url:
                 raise ValueError("OIDC issuer, audience and JWKS URL are required")
