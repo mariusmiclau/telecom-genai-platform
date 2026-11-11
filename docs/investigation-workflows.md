@@ -11,7 +11,7 @@ Context is bounded to 16 fields of at most 256 UTF-8 bytes each. It cannot set
 identity, ACLs, server policies, clocks, token budgets or model parameters.
 
 Ambiguous operational wording returns `outcome: abstained`, no published answer,
-and `clarification.required_fields` / `question`. Multiple named interfaces or
+and `clarification.required_fields` / `question`. Multiple named regions, interfaces or
 versions require an explicit choice. Missing node/region, a requested
 but unnamed interface, and an unspecified software version are checked before
 retrieval or generation. Multiple candidate nodes in a region require a node.
@@ -149,7 +149,7 @@ backups and retention appropriate to the operational dataset.
 
 ## Verification
 
-Measured locally on 11 November 2026: 279 Python tests passed with PostgreSQL
+Measured locally on 11 November 2026: 280 Python tests passed with PostgreSQL
 integration enabled; 35/35 adversarial cases passed; lint, types and fake-DOM
 renderer checks passed. The HTTPS acceptance fixture passed all eight concurrent
 requests and the new investigation/feedback/replay contracts. These are local

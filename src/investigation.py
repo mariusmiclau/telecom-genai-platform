@@ -32,6 +32,7 @@ SCOPE_KEYS = ("element_id", "interface", "region", "software_version")
 NODE_PATTERN = r"\b(?!(?:RB|RUNBOOK)[-_])(?:[A-Z]{1,12}[-_](?:[A-Z0-9]{1,12}[-_])*\d+|(?:CORE|NODE)[-_][A-Z0-9]+)\b"
 INTERFACE_PATTERN = r"\b(?:eth\d+(?:/\d+)*|(?:ge|xe|et)-\d+(?:/\d+)+|(?:Gi|Te|GigabitEthernet)\d+(?:/\d+)+|Gx|Gy|Gr|S1-MME|N2|N3)\b"
 VERSION_PATTERN = r"\b(?:version|release|software)[ :]+(v?\d[\w.()-]*)"
+REGION_PATTERN = r"\bregion[ _-]+(?!is\b|was\b|or\b|and\b|please\b|unknown\b)([A-Za-z0-9_-]+)"
 OPERATIONAL = re.compile(r"\b(?:why|troubleshoot|diagnos\w*|investigat\w*|outage|failing|down|slow|packet loss|status|health)\b", re.I)
 TICKET = re.compile(r"\b(?:INC|CHG|PRB)\d+\b", re.I)
 
@@ -42,7 +43,7 @@ def query_scope(query, context=None):
     patterns = {
         "element_id": NODE_PATTERN,
         "interface": INTERFACE_PATTERN,
-        "region": r"\bregion[ _-]+(?!is\b|was\b|or\b|and\b|please\b|unknown\b)([A-Za-z0-9_-]+)",
+        "region": REGION_PATTERN,
         "software_version": VERSION_PATTERN,
     }
     for key, pattern in patterns.items():
@@ -63,12 +64,14 @@ def clarify(query, context=None, documents=None):
         required.append("interface")
     if operational and len({match.group(1).casefold() for match in re.finditer(VERSION_PATTERN, query, re.I)}) > 1:
         required.append("software_version")
+    if operational and len({match.group(1).casefold() for match in re.finditer(REGION_PATTERN, query, re.I)}) > 1:
+        required.append("region")
     if operational and not any(scope.get(key) for key in ("element_id", "region")):
         if "element_id" not in required:
             required.append("element_id")
     if operational and re.search(r"\binterface\b", query, re.I) and not scope.get("interface") and "interface" not in required:
         required.append("interface")
-    if operational and re.search(r"\bregion\b", query, re.I) and not scope.get("region"):
+    if operational and re.search(r"\bregion\b", query, re.I) and not scope.get("region") and "region" not in required:
         required.append("region")
     if re.search(r"\b(?:version|release|software)\b", query, re.I) and operational and not scope.get("software_version") and "software_version" not in required:
         required.append("software_version")

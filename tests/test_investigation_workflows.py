@@ -53,6 +53,7 @@ def response_fixture():
     ("Why are CORE-A and CORE-B down?", {}, {"element_id"}),
     ("Why is interface Gx or Gy down on PCRF-LON-01?", {}, {"interface"}),
     ("Diagnose PCRF-LON-01 on version 1.0 or version 2.0", {}, {"software_version"}),
+    ("Diagnose packet loss in region London or region Manchester", {}, {"region"}),
 ])
 def test_scope_clarification(query, context, fields):
     assert set(clarify(query, context).required_fields) == fields
