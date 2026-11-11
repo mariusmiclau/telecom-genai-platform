@@ -77,6 +77,23 @@ CREATE TRIGGER ingestion_job_updated BEFORE UPDATE ON ingestion_jobs
  FOR EACH ROW EXECUTE FUNCTION ingestion_touch_updated_at();
 CREATE INDEX ingestion_jobs_updated ON ingestion_jobs(updated_at);
 """),
+    (7, """
+CREATE TABLE answer_records (
+ id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, owner_id TEXT NOT NULL,
+ session_id TEXT, record JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX answer_records_retention ON answer_records(created_at);
+CREATE TABLE engineer_feedback (
+ id TEXT PRIMARY KEY, answer_id TEXT NOT NULL REFERENCES answer_records(id) ON DELETE CASCADE,
+ tenant_id TEXT NOT NULL, submitter TEXT NOT NULL, payload JSONB NOT NULL,
+ state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','approved','rejected')),
+ reviewer TEXT, decision JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE feedback_events (
+ id BIGSERIAL PRIMARY KEY, feedback_id TEXT NOT NULL, tenant_id TEXT NOT NULL,
+ actor TEXT NOT NULL, event TEXT NOT NULL, payload_sha256 TEXT NOT NULL,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TRIGGER feedback_events_immutable BEFORE UPDATE OR DELETE ON feedback_events
+ FOR EACH ROW EXECUTE FUNCTION forbid_action_audit_mutation();
+"""),
 )
 
 

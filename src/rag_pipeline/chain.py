@@ -13,6 +13,13 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+from src.budgets import (
+    BudgetExceeded,
+    consumption_context,
+    messages_bound,
+    prompt_record_context,
+    token_bound,
+)
 from src.monitoring.tracing import trace_span
 
 logger = logging.getLogger(__name__)
@@ -80,7 +87,7 @@ class RAGChain:
                 api_key = self.api_key or os.getenv("OPENAI_API_KEY")
                 if not api_key:
                     raise ValueError("OPENAI_API_KEY environment variable required")
-                self._client = AsyncOpenAI(api_key=api_key, base_url=self.base_url, timeout=20.0, max_retries=1)
+                self._client = AsyncOpenAI(api_key=api_key, base_url=self.base_url, timeout=20.0, max_retries=0)
             except ImportError:
                 raise ImportError("openai package required: pip install openai")
         return self._client
@@ -120,6 +127,15 @@ class RAGChain:
             span.set_attribute("genai.prompt.context_characters", len(formatted_context))
             span.set_attribute("genai.prompt.source_count", len(context_docs))
 
+        budget = consumption_context.get()
+        input_bound = messages_bound(messages)
+        if budget and input_bound > budget.prompt_token_limit:
+            raise BudgetExceeded("Prompt exceeds token budget")
+        record = prompt_record_context.get()
+        if record is not None:
+            record.update(messages=messages, model=self.model, temperature=self.temperature,
+                max_tokens=self.max_tokens, prompt_template_version="telecom-evidence-v1.4")
+
         # Generate response
         try:
             with trace_span(
@@ -132,12 +148,23 @@ class RAGChain:
                 },
             ) as span:
                 client = await self._get_client()
-                response = await client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                )
+                for attempt in range((budget.retry_limit if budget else 0) + 1):
+                    if budget:
+                        budget.reserve(input_bound + self.max_tokens)
+                        budget.input_token_upper_bound = input_bound
+                        budget.output_token_limit = self.max_tokens
+                        budget.completion_attempts += 1
+                    try:
+                        response = await client.chat.completions.create(
+                            model=self.model, messages=messages, temperature=self.temperature,
+                            max_tokens=self.max_tokens,
+                        )
+                        break
+                    except Exception as error:
+                        from openai import APIConnectionError
+                        transient = isinstance(error, APIConnectionError) or getattr(error, "status_code", 0) in (408, 429, 500, 502, 503, 504)
+                        if not budget or attempt >= budget.retry_limit or not transient:
+                            raise
                 if response.usage:
                     span.set_attribute("genai.usage.input_tokens", response.usage.prompt_tokens)
                     span.set_attribute("genai.usage.output_tokens", response.usage.completion_tokens)
@@ -146,6 +173,11 @@ class RAGChain:
             # Extract response text
             text = response.choices[0].message.content or ""
             tokens_used = response.usage.total_tokens if response.usage else 0
+            if budget:
+                budget.provider_reported_tokens += tokens_used
+            if record is not None:
+                record["generated_text"] = text
+                record["finish_reason"] = response.choices[0].finish_reason
             finish_reason = response.choices[0].finish_reason or "stop"
 
             # Extract source attributions
@@ -168,8 +200,10 @@ class RAGChain:
                 finish_reason=finish_reason,
             )
 
-        except Exception as e:
-            logger.error(f"Response generation failed: {e}")
+        except BudgetExceeded:
+            raise
+        except Exception:
+            logger.error("Response generation failed; provider details suppressed")
             # Return fallback response
             return GeneratedResponse(
                 text=self._generate_fallback_response(query, context_docs),
@@ -243,10 +277,18 @@ class RAGChain:
 
         # Add conversation history
         if history and hasattr(history, 'messages'):
-            for msg in history.messages[-6:]:  # Last 3 turns (6 messages)
+            selected = []
+            history_bound = 0
+            budget = consumption_context.get()
+            for msg in reversed(history.messages[-6:]):
                 role = msg.role if hasattr(msg, 'role') else msg.get('role', 'user')
                 content = msg.content if hasattr(msg, 'content') else msg.get('content', '')
-                messages.append({"role": role, "content": content})
+                history_bound += token_bound(content) + token_bound(role)
+                if history_bound > (budget.history_token_limit if budget else 2000):
+                    break
+                if role in ("user", "assistant"):
+                    selected.append({"role": role, "content": content})
+            messages.extend(reversed(selected))
 
         # Build user message with context
         user_content = self._build_user_prompt(query, context, tool_data)

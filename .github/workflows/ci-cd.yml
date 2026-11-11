@@ -20,6 +20,7 @@ jobs:
       - run: uv run ruff check src tests scripts
       - run: uv run mypy src --ignore-missing-imports
       - run: uv run mypy src/evidence.py --ignore-missing-imports --check-untyped-defs
+      - run: uv run mypy src/answer_records.py src/budgets.py src/investigation.py --ignore-missing-imports --check-untyped-defs
       - name: Audit delivered dependencies
         run: |
           uv export --locked --no-dev --no-emit-project --format requirements-txt --output-file /tmp/requirements.txt > /dev/null
@@ -38,7 +39,7 @@ jobs:
       - name: Exercise real PostgreSQL publication and retrieval
         env:
           RUN_INTEGRATION: '1'
-        run: uv run pytest tests/test_release.py tests/test_deployment.py tests/test_security_runtime.py tests/test_workflows.py tests/test_evidence_trust.py -q
+        run: uv run pytest tests/test_release.py tests/test_deployment.py tests/test_security_runtime.py tests/test_workflows.py tests/test_evidence_trust.py tests/test_investigation_workflows.py -q
       - name: Build and start demo container
         run: docker compose up -d --build --wait demo
       - name: Verify packaged demo

@@ -14,8 +14,14 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from src.api.control_routes import router as control_router
 from src.api.routes import router
+from src.budgets import BudgetExceeded, Consumption, consumption_context, prompt_record_context
 from src.monitoring.logging import setup_logging
-from src.monitoring.metrics import AUTH_FAILURES, collect_ingestion_metrics
+from src.monitoring.metrics import (
+    AUTH_FAILURES,
+    BUDGET_REJECTIONS,
+    BUDGET_RESERVED,
+    collect_ingestion_metrics,
+)
 from src.monitoring.tracing import configure_tracing
 from src.runtime import Runtime
 from src.security import Authenticator, principal_context, route_permission
@@ -54,6 +60,11 @@ def create_app(settings: AppSettings | None = None, runtime: Runtime | None = No
     )
     window_start = time.monotonic()
     requests = 0
+
+    @application.exception_handler(BudgetExceeded)
+    async def budget_error(request, error):
+        BUDGET_REJECTIONS.inc()
+        return JSONResponse({"detail": str(error), "consumption": consumption_context.get().report() if consumption_context.get() else {}}, status_code=429)
 
     @application.middleware("http")
     async def controls(request: Request, call_next):
@@ -94,11 +105,20 @@ def create_app(settings: AppSettings | None = None, runtime: Runtime | None = No
             request._body = bytes(content)
         if principal is not None:
             principal_token = principal_context.set(principal)
+        budget_token = consumption_context.set(Consumption(maximum_request_tokens=config.max_request_tokens,
+            prompt_token_limit=config.max_prompt_tokens, history_token_limit=config.max_history_tokens,
+            retry_limit=config.model_retry_budget))
+        prompt_token = prompt_record_context.set({})
         try:
             response = await call_next(request)
         except Exception:
             return JSONResponse({"detail": "Processing unavailable"}, status_code=503)
         finally:
+            budget = consumption_context.get()
+            if budget:
+                BUDGET_RESERVED.inc(budget.reserved_token_upper_bound)
+            consumption_context.reset(budget_token)
+            prompt_record_context.reset(prompt_token)
             if principal_token is not None:
                 principal_context.reset(principal_token)
         response.headers["X-Content-Type-Options"] = "nosniff"

@@ -48,3 +48,14 @@ assert.equal(elements.get("#evidence-list").children.length, 0);
 assert.equal(elements.get("#claim-panel").hidden, true);
 assert.equal(elements.get("#conflict-panel").hidden, true);
 console.log("Demo renderer unit checks passed (fake DOM; no visual/browser verification)");
+context.fixture = {response: "Clarification", sources: [], confidence: 0, outcome: "abstained", answer_id: "fixture-id",
+  clarification: {required_fields: ["element_id", "interface"]}, consumption: {completion_attempts: 0}};
+vm.runInContext("setSuccess(fixture)", context);
+assert(elements.get("#clarification-notice").textContent.includes("element_id"));
+assert.equal(elements.get("#troubleshooting-panel").hidden, true);
+assert.equal(elements.get("#feedback-panel").hidden, false);
+context.fixture.troubleshooting = {symptoms: [{text: "<img src=x onerror=canary()>"}], relevant_incidents: [{text: "INC1", citation_ids: ["source-1"]}], likely_causes: [], suggested_read_only_checks: ["Inspect counters"], missing_evidence: ["No live logs"]};
+vm.runInContext("setSuccess(fixture)", context);
+assert.equal(elements.get("#troubleshooting-sections").children.length, 10);
+assert.equal(elements.get("#troubleshooting-panel").hidden, false);
+assert(!tags.includes("img") && !tags.includes("script"));

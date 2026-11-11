@@ -17,6 +17,7 @@ from src.evidence import (
     link_claims,
     select_evidence,
 )
+from src.investigation import Clarification, clarify, query_scope, retrieval_query, scoped_documents
 from src.monitoring.tracing import content_attributes, current_trace_id, trace_span
 from src.rag_pipeline.retriever import RetrievedDocument
 
@@ -35,6 +36,7 @@ class DemoAnswer:
     conflicts: list[EvidenceConflict] = field(default_factory=list)
     answer_kind: Literal["historical_resolution", "advisory", "insufficient_evidence", "conflict"] = "historical_resolution"
     outcome: Literal["answered", "abstained", "escalated"] = "answered"
+    clarification: Clarification = field(default_factory=Clarification)
 
 
 class OfflineDemoService:
@@ -46,8 +48,9 @@ class OfflineDemoService:
     reserved for evaluation and are never read by the answer pipeline.
     """
 
-    def __init__(self, repository_root: Path | None = None, evidence_clock=None):
+    def __init__(self, repository_root: Path | None = None, evidence_clock=None, source_review_max_age_days=365):
         self.evidence_clock = evidence_clock
+        self.source_review_max_age_days = source_review_max_age_days
         self.repository_root = repository_root or Path(__file__).resolve().parents[2]
         if repository_root is None and not (self.repository_root / "datasets").is_dir():
             self.repository_root = Path(sys.prefix) / "share" / "telecom-genai"
@@ -71,10 +74,16 @@ class OfflineDemoService:
         entity_match = top.component_scores.get("entity_match", 0.0)
         return round(min(1.0, 0.55 * overlap + 0.30 * entity_match + 0.15 * margin), 3)
 
-    def answer(self, query: str) -> DemoAnswer:
+    def answer(self, query: str, context=None) -> DemoAnswer:
         """Run the offline pipeline with the same trace-stage names as production."""
         with trace_span("query", {**content_attributes(query), "demo.offline": True}):
+            clarification = clarify(query, context)
+            if clarification.required_fields:
+                return DemoAnswer(clarification.question, [], 0.0, current_trace_id(),
+                    outcome="abstained", answer_kind="insufficient_evidence", clarification=clarification)
             with trace_span("entity_extraction") as span:
+                original_query = query
+                query = retrieval_query(query, context)
                 entities = self.retriever._entity_terms(query)
                 span.set_attribute("telecom.entity.count", len(entities))
 
@@ -107,7 +116,13 @@ class OfflineDemoService:
                         if candidate.get("element_id") == ticket.get("element_id"):
                             candidates.append(RetrievedDocument(hit.ticket_id, render_ticket(candidate),
                                 confidence, hit.source, candidate))
-                selection = select_evidence(candidates, now=self.evidence_clock() if self.evidence_clock else None)
+                candidates = scoped_documents(original_query, context, candidates)
+                clarification = clarify(original_query, context, candidates)
+                if clarification.required_fields:
+                    return DemoAnswer(clarification.question, [], 0.0, current_trace_id(),
+                        outcome="abstained", answer_kind="insufficient_evidence", clarification=clarification)
+                selection = select_evidence(candidates, {**(context or {}), **query_scope(query, context)}, now=self.evidence_clock() if self.evidence_clock else None,
+                    max_review_age_days=self.source_review_max_age_days)
                 ambiguous = any(warning.code == "compatibility_ambiguous" for warning in selection.warnings)
                 eligible_primary = bool(selection.documents and selection.documents[0].document_id == top_ticket)
                 supported = supported and eligible_primary and not selection.conflicts and not ambiguous
@@ -161,4 +176,6 @@ class OfflineDemoService:
                     conflicts=selection.conflicts,
                     answer_kind="conflict" if selection.conflicts else "historical_resolution" if supported and selection.evidence[0].freshness == "historical" else "advisory" if supported else "insufficient_evidence",
                     outcome="escalated" if selection.conflicts or ambiguous else "answered" if supported else "abstained",
+                    clarification=Clarification(required_fields=["software_version", "equipment_family"],
+                        question="Which software version and equipment family apply to this incident?") if ambiguous else Clarification(),
                 )

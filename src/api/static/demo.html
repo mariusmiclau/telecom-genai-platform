@@ -41,6 +41,13 @@
           <label for="query">Operations question</label>
           <textarea id="query" name="query" rows="5" required maxlength="4000" aria-describedby="query-help">Which incident fixed DIAMETER_TOO_BUSY on PCRF-LON-01?</textarea>
           <p id="query-help" class="helper">Ask about a ticket, network element, interface, SLA, symptom, or remediation.</p>
+          <details><summary>Confirm operational scope</summary>
+            <label for="scope-node">Affected node</label><input id="scope-node" maxlength="128" placeholder="PCRF-LON-01">
+            <label for="scope-interface">Interface</label><input id="scope-interface" maxlength="128" placeholder="Gx">
+            <label for="scope-region">Region</label><input id="scope-region" maxlength="128" placeholder="London">
+            <label for="scope-version">Software version</label><input id="scope-version" maxlength="128" placeholder="Confirmed version">
+            <label for="scope-equipment">Equipment family</label><input id="scope-equipment" maxlength="128" placeholder="Confirmed equipment family">
+          </details>
           <div class="form-actions">
             <button id="submit-button" type="submit">Run grounded query</button>
             <span class="key-hint">Ctrl + Enter</span>
@@ -64,6 +71,8 @@
           <div id="answer-content" hidden>
             <p id="answer-kind" class="answer-kind"></p>
             <p id="answer-text"></p>
+            <p id="clarification-notice" role="status"></p>
+            <section id="troubleshooting-panel" hidden><h3>Investigation view</h3><div id="troubleshooting-sections"></div></section>
             <ul id="safety-notices" class="safety-notices" aria-label="Evidence warnings"></ul>
             <section id="conflict-panel" class="conflict-panel" hidden aria-label="Conflicting evidence">
               <h3>Sources disagree — review required</h3>
@@ -78,6 +87,19 @@
             <div id="evidence-list"></div>
             <h3>Sources</h3>
             <ol id="source-list"></ol>
+            <section id="feedback-panel" hidden>
+              <h3>Engineer feedback</h3>
+              <p class="helper">Untrusted until reviewed. No automatic training or knowledge changes. Demo feedback is temporary.</p>
+              <label for="feedback-rating">Rating</label><select id="feedback-rating"><option value="helpful">Helpful</option><option value="wrong">Wrong</option></select>
+              <label for="feedback-citations">Incorrect citation IDs (comma separated)</label><input id="feedback-citations" maxlength="300" placeholder="source-1">
+              <label for="feedback-comment">What was wrong?</label><textarea id="feedback-comment" maxlength="2000" rows="2"></textarea>
+              <label for="feedback-correction">Proposed correction (not published)</label><textarea id="feedback-correction" maxlength="4000" rows="3"></textarea>
+              <button id="feedback-submit" type="button">Submit for review</button><p id="feedback-status" role="status"></p>
+              <h3>Consumption and replay</h3><p id="consumption-summary"></p>
+              <button id="replay-button" type="button">Recheck saved evidence</button>
+              <button id="record-button" type="button">Inspect replay manifest</button>
+              <pre id="replay-result" class="replay-output"></pre>
+            </section>
           </div>
         </section>
       </div>

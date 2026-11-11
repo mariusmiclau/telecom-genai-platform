@@ -128,7 +128,7 @@ async def test_live_success_serializes_real_source_attribution():
     from src.rag_pipeline.chain import SourceAttribution
     app = create_app(live_settings())
     result = AgentResult("Restored availability [Source 1]", [SourceAttribution("ticket1", relevance_score=0.8)], 0.8)
-    app.state.runtime.agent = SimpleNamespace(process=AsyncMock(return_value=result))
+    app.state.runtime.agent = SimpleNamespace(process=AsyncMock(return_value=result), memory=SimpleNamespace(_transaction=lambda *args: []))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/v1/chat", json={"message": "Find incident"}, headers={"Authorization": "Bearer " + "r" * 32})
     assert response.status_code == 200
@@ -141,7 +141,7 @@ async def test_live_escalation_remains_distinct_from_abstention():
     from src.agents.orchestrator import AgentResult
     app = create_app(live_settings())
     result = AgentResult("Contact the operations team", [], 0.0, outcome="escalated")
-    app.state.runtime.agent = SimpleNamespace(process=AsyncMock(return_value=result))
+    app.state.runtime.agent = SimpleNamespace(process=AsyncMock(return_value=result), memory=SimpleNamespace(_transaction=lambda *args: []))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/v1/chat", json={"message": "Create an incident"}, headers={"Authorization": "Bearer " + "r" * 32})
     assert response.status_code == 200
@@ -162,7 +162,7 @@ async def test_live_concurrency_is_bounded_under_a_queued_burst():
             return AgentResult("No evidence", [], 0.0, outcome="abstained")
         finally:
             active -= 1
-    app.state.runtime.agent = SimpleNamespace(process=process)
+    app.state.runtime.agent = SimpleNamespace(process=process, memory=SimpleNamespace(_transaction=lambda *args: []))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         results = await asyncio.gather(*(client.post("/api/v1/chat", json={"message": "Find incident"},
             headers={"Authorization": "Bearer " + "r" * 32}) for _ in range(12)))

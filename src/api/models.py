@@ -2,9 +2,10 @@
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.evidence import ClaimLink, EvidenceConflict, EvidenceItem, SafetyNotice
+from src.investigation import Clarification, Troubleshooting
 
 
 class ChatRequest(BaseModel):
@@ -13,6 +14,14 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000, description="User message")
     session_id: Optional[str] = Field(None, pattern=r"^[A-Za-z0-9_.:-]{1,128}$", description="Session ID for conversation continuity")
     context: Optional[dict] = Field(None, description="Additional context for the agent")
+
+    @field_validator("context")
+    @classmethod
+    def bounded_context(cls, value):
+        if value is not None and (len(value) > 16 or any(not isinstance(key, str) or len(key) > 64 or
+                not isinstance(item, (str, int, float, bool)) or len(str(item).encode("utf-8")) > 256 for key, item in value.items())):
+            raise ValueError("Context must contain at most 16 bounded scalar fields")
+        return value
 
     model_config = {
         "json_schema_extra": {
@@ -55,6 +64,10 @@ class ChatResponse(BaseModel):
     warnings: list[SafetyNotice] = Field(default_factory=list)
     conflicts: list[EvidenceConflict] = Field(default_factory=list)
     answer_kind: Literal["historical_resolution", "advisory", "insufficient_evidence", "conflict"] = "advisory"
+    clarification: Clarification = Field(default_factory=Clarification)
+    troubleshooting: Troubleshooting | None = None
+    answer_id: str | None = None
+    consumption: dict = Field(default_factory=dict)
 
 
 class IngestRequest(BaseModel):
